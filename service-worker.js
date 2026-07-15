@@ -2,7 +2,7 @@
 // service-worker.js — Cache offline de l'app shell
 // ============================================
 
-const CACHE_NAME = 'biosynth-idle-v1';
+const CACHE_NAME = 'biosynth-idle-v2';
 
 const APP_SHELL = [
   './',
@@ -13,6 +13,7 @@ const APP_SHELL = [
   './js/state.js',
   './js/save.js',
   './js/ui.js',
+  './js/economy.js',
   './icons/icon.svg',
 ];
 

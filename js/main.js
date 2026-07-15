@@ -4,7 +4,17 @@
 
 import { gameState } from './state.js';
 import { saveGame, loadGame, exportSave, importSave, hardReset, startAutosave } from './save.js';
-import { renderAll, flashSaveStatus } from './ui.js';
+import { renderAll, flashSaveStatus, showPurgeAlert } from './ui.js';
+import {
+  SYNAPSE_DEFS,
+  MUTATION_DEFS,
+  buySynapse,
+  buyMutation,
+  handleCoreClick,
+  tick,
+} from './economy.js';
+
+const TICK_INTERVAL_MS = 100; // 10 ticks/seconde pour une production fluide
 
 function init() {
   const hadSave = loadGame();
@@ -14,19 +24,49 @@ function init() {
 
   renderAll();
   wireEvents();
+  startGameLoop();
   startAutosave((ok) => {
     if (ok) flashSaveStatus('Sauvegarde effectuée');
   });
   registerServiceWorker();
 }
 
+function startGameLoop() {
+  const deltaSeconds = TICK_INTERVAL_MS / 1000;
+  setInterval(() => {
+    const purged = tick(deltaSeconds);
+    renderAll();
+    if (purged) showPurgeAlert();
+  }, TICK_INTERVAL_MS);
+}
+
 function wireEvents() {
-  // Clic sur le Noyau : génère des Cycles de Calcul
-  // Phase 1 remplacera le "+1" fixe par un calcul basé sur les Mutations actives
+  // Clic sur le Noyau : génère des Cycles de Calcul (quantité modifiée par les Mutations)
   document.getElementById('core-button').addEventListener('click', () => {
-    gameState.resources.cycles += 1;
+    handleCoreClick();
     renderAll();
   });
+
+  // Achat des Synapses
+  for (const key of Object.keys(SYNAPSE_DEFS)) {
+    const btn = document.getElementById(`buy-${key}`);
+    if (!btn) continue;
+    btn.addEventListener('click', () => {
+      if (buySynapse(key)) renderAll();
+    });
+  }
+
+  // Achat des Mutations
+  for (const key of Object.keys(MUTATION_DEFS)) {
+    const btn = document.getElementById(`buy-${key}`);
+    if (!btn) continue;
+    btn.addEventListener('click', () => {
+      if (buyMutation(key)) {
+        renderAll();
+        flashSaveStatus(`Mutation acquise : ${MUTATION_DEFS[key].label}`);
+      }
+    });
+  }
 
   document.getElementById('export-btn').addEventListener('click', () => {
     const encoded = exportSave();

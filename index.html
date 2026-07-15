@@ -31,6 +31,10 @@
     </div>
   </header>
 
+  <div class="purge-alert" id="purge-alert" role="alert" hidden>
+    ⚠ Scan de Purge détecté — ressources compromises
+  </div>
+
   <main class="game-layout">
 
     <!-- Zone centrale : le Noyau cliquable -->
@@ -43,6 +47,7 @@
         </svg>
       </button>
       <p class="core-hint">Cliquez sur le Noyau pour générer des Cycles de Calcul</p>
+      <p class="core-production" id="core-production">+0 Cycles/s · +0 Biomasse/s</p>
     </section>
 
     <!-- Panneau ressources -->
@@ -67,30 +72,63 @@
       </ul>
     </aside>
 
-    <!-- Panneau boutique (squelette, logique en Phase 1) -->
+    <!-- Panneau boutique : Synapses (production passive) -->
     <section class="shop-panel" id="shop-panel">
       <h2 class="panel-title">Synapses</h2>
       <ul class="shop-list">
-        <li class="shop-item" data-item="synapse-basique">
+        <li class="shop-item" data-item="basique">
           <div class="shop-item-info">
-            <span class="shop-item-name">Synapse Basique</span>
-            <span class="shop-item-desc">Production passive de Cycles</span>
+            <span class="shop-item-name">Synapse Basique <span class="shop-item-count" id="count-basique">(0)</span></span>
+            <span class="shop-item-desc">+1 Cycle de Calcul / seconde</span>
           </div>
-          <button class="shop-item-buy" disabled>
-            <span class="shop-item-cost">10</span>
+          <button class="shop-item-buy" id="buy-basique">
+            <span class="shop-item-cost" id="cost-basique">10</span>
           </button>
         </li>
-        <li class="shop-item" data-item="synapse-avancee">
+        <li class="shop-item" data-item="avancee">
           <div class="shop-item-info">
-            <span class="shop-item-name">Synapse Avancée</span>
-            <span class="shop-item-desc">Génère aussi de la Biomasse</span>
+            <span class="shop-item-name">Synapse Avancée <span class="shop-item-count" id="count-avancee">(0)</span></span>
+            <span class="shop-item-desc">+2 Cycles/s et +0.5 Biomasse/s</span>
           </div>
-          <button class="shop-item-buy" disabled>
-            <span class="shop-item-cost">50</span>
+          <button class="shop-item-buy" id="buy-avancee">
+            <span class="shop-item-cost" id="cost-avancee">50</span>
           </button>
         </li>
       </ul>
-      <p class="shop-placeholder-note">La logique d'achat arrive en Phase 1.</p>
+    </section>
+
+    <!-- Panneau Mutations (achat unique avec Biomasse) -->
+    <section class="shop-panel" id="mutations-panel">
+      <h2 class="panel-title">Mutations</h2>
+      <ul class="shop-list">
+        <li class="shop-item" data-item="clickPower">
+          <div class="shop-item-info">
+            <span class="shop-item-name">Amplification Synaptique</span>
+            <span class="shop-item-desc">+1 Cycle par clic sur le Noyau</span>
+          </div>
+          <button class="shop-item-buy" id="buy-clickPower">
+            <span class="shop-item-cost" id="cost-clickPower">20</span>
+          </button>
+        </li>
+        <li class="shop-item" data-item="resistanceDampener">
+          <div class="shop-item-info">
+            <span class="shop-item-name">Camouflage Adaptatif</span>
+            <span class="shop-item-desc">-30% de vitesse d'accumulation de Résistance</span>
+          </div>
+          <button class="shop-item-buy" id="buy-resistanceDampener">
+            <span class="shop-item-cost" id="cost-resistanceDampener">40</span>
+          </button>
+        </li>
+        <li class="shop-item" data-item="synapseBoost">
+          <div class="shop-item-info">
+            <span class="shop-item-name">Prolifération Cellulaire</span>
+            <span class="shop-item-desc">+20% de production sur toutes les Synapses</span>
+          </div>
+          <button class="shop-item-buy" id="buy-synapseBoost">
+            <span class="shop-item-cost" id="cost-synapseBoost">80</span>
+          </button>
+        </li>
+      </ul>
     </section>
 
   </main>

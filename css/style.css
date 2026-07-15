@@ -125,11 +125,12 @@ button:focus-visible,
     grid-template-columns: 1fr 260px;
     grid-template-areas:
       "core resources"
-      "shop shop";
+      "shop mutations";
   }
   .core-zone { grid-area: core; }
   .resources-panel { grid-area: resources; }
-  .shop-panel { grid-area: shop; }
+  #shop-panel { grid-area: shop; }
+  #mutations-panel { grid-area: mutations; }
 }
 
 /* ============================================
@@ -189,6 +190,41 @@ button:focus-visible,
   font-size: 0.85rem;
   text-align: center;
   margin: 0;
+}
+
+.core-production {
+  color: var(--color-green);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+  text-shadow: var(--glow-green);
+}
+
+/* ============================================
+   ALERTE SCAN DE PURGE
+   ============================================ */
+
+.purge-alert {
+  margin: 0 20px;
+  padding: 10px 16px;
+  background: rgba(255, 69, 0, 0.15);
+  border: var(--outline-width) solid var(--color-alert);
+  border-radius: var(--radius);
+  color: var(--color-alert);
+  font-weight: 700;
+  text-align: center;
+  text-shadow: var(--glow-alert);
+  animation: purge-pulse 0.6s ease-in-out infinite alternate;
+}
+
+.purge-alert[hidden] {
+  display: none;
+}
+
+@keyframes purge-pulse {
+  from { opacity: 0.75; }
+  to { opacity: 1; }
 }
 
 /* ============================================
@@ -271,6 +307,11 @@ button:focus-visible,
   font-weight: 600;
 }
 
+.shop-item-count {
+  color: var(--color-cyan);
+  font-weight: 700;
+}
+
 .shop-item-desc {
   font-size: 0.75rem;
   color: var(--color-text-dim);
@@ -289,6 +330,13 @@ button:focus-visible,
 .shop-item-buy:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.shop-item-buy--purchased {
+  background: var(--color-green-dim);
+  border-color: var(--color-green);
+  cursor: default;
+  opacity: 1;
 }
 
 .shop-placeholder-note {
