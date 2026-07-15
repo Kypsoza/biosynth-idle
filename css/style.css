@@ -1,0 +1,344 @@
+/* ============================================
+   SYNTHÈSE : ÉVEIL — Design tokens
+   Palette cartoon saturée, contrastes francs (WoW-like)
+   ============================================ */
+
+:root {
+  /* Palette de base (Strate 01 — Éveil) */
+  --color-bg: #14141F;
+  --color-bg-panel: #1E1E30;
+  --color-bg-panel-raised: #262640;
+  --color-border: #3A3A5C;
+
+  --color-cyan: #00D9FF;
+  --color-cyan-dim: #0A8AA6;
+  --color-green: #39FF14;
+  --color-green-dim: #24A60D;
+
+  --color-magenta: #B026FF;   /* accent corruption / Virus */
+  --color-alert: #FF4500;     /* accent Résistance / danger */
+
+  --color-text: #E8E8F5;
+  --color-text-dim: #9494B8;
+
+  --font-display: 'Segoe UI', 'Trebuchet MS', sans-serif;
+  --font-body: 'Segoe UI', system-ui, sans-serif;
+
+  --radius: 10px;
+  --outline-width: 2px;
+
+  --glow-cyan: 0 0 12px rgba(0, 217, 255, 0.6);
+  --glow-green: 0 0 12px rgba(57, 255, 20, 0.55);
+  --glow-alert: 0 0 14px rgba(255, 69, 0, 0.65);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   HUD
+   ============================================ */
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--color-bg-panel);
+  border-bottom: var(--outline-width) solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.hud-strate, .hud-resistance {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hud-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-dim);
+}
+
+.hud-value {
+  font-weight: 700;
+  color: var(--color-cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+.resistance-bar {
+  width: 140px;
+  height: 12px;
+  background: var(--color-bg);
+  border: var(--outline-width) solid var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.resistance-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-alert), #FF8C00);
+  box-shadow: var(--glow-alert);
+  transition: width 0.3s ease;
+}
+
+/* ============================================
+   LAYOUT PRINCIPAL
+   ============================================ */
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+@media (min-width: 800px) {
+  .game-layout {
+    grid-template-columns: 1fr 260px;
+    grid-template-areas:
+      "core resources"
+      "shop shop";
+  }
+  .core-zone { grid-area: core; }
+  .resources-panel { grid-area: resources; }
+  .shop-panel { grid-area: shop; }
+}
+
+/* ============================================
+   ZONE DU NOYAU
+   ============================================ */
+
+.core-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 30px;
+  background: var(--color-bg-panel);
+  border: var(--outline-width) solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.core-button {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 220px;
+  height: 220px;
+  transition: transform 0.08s ease;
+}
+
+.core-button:active {
+  transform: scale(0.94);
+}
+
+.core-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(var(--glow-cyan));
+}
+
+.core-ring-outer {
+  fill: none;
+  stroke: var(--color-cyan-dim);
+  stroke-width: 4;
+}
+
+.core-ring-inner {
+  fill: var(--color-bg-panel-raised);
+  stroke: var(--color-cyan);
+  stroke-width: 3;
+}
+
+.core-nucleus {
+  fill: var(--color-green);
+  filter: drop-shadow(var(--glow-green));
+}
+
+.core-hint {
+  color: var(--color-text-dim);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 0;
+}
+
+/* ============================================
+   PANNEAUX (ressources / boutique)
+   ============================================ */
+
+.panel-title {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-cyan);
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.resources-panel, .shop-panel {
+  background: var(--color-bg-panel);
+  border: var(--outline-width) solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.resource-list, .shop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resource-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.resource-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.resource-icon--cycles { background: var(--color-cyan); box-shadow: var(--glow-cyan); }
+.resource-icon--biomasse { background: var(--color-green); box-shadow: var(--glow-green); }
+.resource-icon--adn { background: var(--color-magenta); box-shadow: 0 0 12px rgba(176, 38, 255, 0.6); }
+
+.resource-name {
+  flex: 1;
+  color: var(--color-text-dim);
+}
+
+.resource-amount {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  background: var(--color-bg-panel-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.shop-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shop-item-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.shop-item-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+
+.shop-item-buy {
+  background: var(--color-cyan-dim);
+  color: var(--color-text);
+  border: 1px solid var(--color-cyan);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.shop-item-buy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shop-placeholder-note {
+  margin: 12px 0 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+  font-style: italic;
+}
+
+/* ============================================
+   FOOTER / SAUVEGARDE
+   ============================================ */
+
+.save-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--color-bg-panel);
+  border-top: var(--outline-width) solid var(--color-border);
+}
+
+.save-status {
+  font-size: 0.78rem;
+  color: var(--color-text-dim);
+}
+
+.save-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.save-btn {
+  background: var(--color-bg-panel-raised);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+}
+
+.save-btn--danger {
+  border-color: var(--color-alert);
+  color: var(--color-alert);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
