@@ -353,9 +353,9 @@ button:focus-visible,
 }
 
 .shop-item-buy {
-  background: var(--color-cyan-dim);
+  background: var(--color-bg-panel-raised);
   color: var(--color-text);
-  border: 1px solid var(--color-cyan);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 0.8rem;
@@ -373,6 +373,16 @@ button:focus-visible,
   border-color: var(--color-green);
   cursor: default;
   opacity: 1;
+}
+
+.cost-cycles {
+  color: var(--color-cyan);
+  font-weight: 700;
+}
+
+.cost-biomasse {
+  color: var(--color-green);
+  font-weight: 700;
 }
 
 /* ============================================
@@ -420,7 +430,7 @@ button:focus-visible,
 .tile-action-btn {
   width: 100%;
   margin-top: 10px;
-  background: var(--color-cyan-dim);
+  background: var(--color-bg-panel-raised);
   color: var(--color-text);
   border: 1px solid var(--color-cyan);
   border-radius: 6px;

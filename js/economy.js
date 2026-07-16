@@ -35,9 +35,13 @@ export function unlockCost(q, r) {
   const ring = hexDistance(0, 0, q, r);
   const { cyclesRatio, biomasseRatio } = tileCostProfile(q, r);
   const base = 12 * Math.pow(Math.max(ring, 1), 1.6);
+  // Les cases du premier anneau ne coûtent jamais de Biomasse : au tout début de partie,
+  // aucun Incubateur n'existe encore pour en produire, donc un déblocage 100% Cycles doit
+  // toujours être possible pour éviter un blocage total de la progression.
+  const effectiveBiomasseRatio = ring <= 1 ? 0 : biomasseRatio;
   return {
     cycles: Math.ceil(base * cyclesRatio),
-    biomasse: Math.ceil(base * biomasseRatio * 0.6),
+    biomasse: Math.ceil(base * effectiveBiomasseRatio * 0.6),
   };
 }
 

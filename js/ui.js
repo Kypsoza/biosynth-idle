@@ -137,7 +137,7 @@ export function renderTileInfoPanel(selected) {
     panel.innerHTML = `
       <h2 class="panel-title">Case verrouillée</h2>
       <p class="tile-info-desc">Débloquez cette case pour pouvoir y construire un bâtiment.</p>
-      <div class="tile-info-stat"><span>Coût</span><strong>${formatNumber(cost.cycles)} Cycles / ${formatNumber(cost.biomasse)} Biomasse</strong></div>
+      <div class="tile-info-stat"><span>Coût</span><strong><span class="cost-cycles">${formatNumber(cost.cycles)} Cycles</span>${cost.biomasse > 0 ? ` / <span class="cost-biomasse">${formatNumber(cost.biomasse)} Biomasse</span>` : ''}</strong></div>
       <button class="tile-action-btn" data-action="unlock" data-q="${q}" data-r="${r}" ${affordable ? '' : 'disabled'}>Débloquer</button>
     `;
     return;
@@ -153,7 +153,7 @@ export function renderTileInfoPanel(selected) {
             <span class="shop-item-desc">${def.description}</span>
           </div>
           <button class="shop-item-buy" data-action="build" data-type="${type}" data-q="${q}" data-r="${r}" ${affordable ? '' : 'disabled'}>
-            <span>${formatNumber(def.placementCost.cycles)}⚡ ${def.placementCost.biomasse ? '/ ' + formatNumber(def.placementCost.biomasse) + '🧬' : ''}</span>
+            <span class="cost-cycles">${formatNumber(def.placementCost.cycles)}⚡</span>${def.placementCost.biomasse ? ` / <span class="cost-biomasse">${formatNumber(def.placementCost.biomasse)}🧬</span>` : ''}
           </button>
         </li>
       `;
@@ -192,7 +192,7 @@ export function renderTileInfoPanel(selected) {
     const cost = upgradeCost(type, level);
     const affordable = canUpgradeBuilding(q, r);
     upgradeSection = `
-      <div class="tile-info-stat"><span>Coût amélioration</span><strong>${formatNumber(cost.cycles)}⚡ / ${formatNumber(cost.biomasse)}🧬</strong></div>
+      <div class="tile-info-stat"><span>Coût amélioration</span><strong><span class="cost-cycles">${formatNumber(cost.cycles)}⚡</span> / <span class="cost-biomasse">${formatNumber(cost.biomasse)}🧬</span></strong></div>
       <button class="tile-action-btn" data-action="upgrade" data-q="${q}" data-r="${r}" ${affordable ? '' : 'disabled'}>Améliorer (Niveau ${level + 1})</button>
     `;
   }
