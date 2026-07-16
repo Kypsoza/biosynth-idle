@@ -8,8 +8,8 @@ export const BUILDING_TYPES = {
   energie: {
     label: 'Générateur d\'Énergie',
     description: 'Produit de l\'Énergie, consommée en continu par vos Agents',
-    placementCost: { cycles: 12, biomasse: 0 },
-    constructionTime: 6,
+    placementCost: { cycles: 15, biomasse: 0 },
+    constructionTime: 4,
     prerequisite: null,
     slot: { q: 2, r: 0 },
     requiresAgents: true,
@@ -20,7 +20,7 @@ export const BUILDING_TYPES = {
   synapse: {
     label: 'Synapse',
     description: 'Production de Cycles de Calcul',
-    placementCost: { cycles: 15, biomasse: 0 },
+    placementCost: { cycles: 20, biomasse: 0 },
     constructionTime: 5,
     prerequisite: null,
     slot: { q: 2, r: -2 },
@@ -32,7 +32,7 @@ export const BUILDING_TYPES = {
   incubateur: {
     label: 'Incubateur',
     description: 'Production de Biomasse Numérique',
-    placementCost: { cycles: 20, biomasse: 5 },
+    placementCost: { cycles: 35, biomasse: 0 },
     constructionTime: 8,
     prerequisite: 'synapse',
     slot: { q: 0, r: -2 },
@@ -44,8 +44,8 @@ export const BUILDING_TYPES = {
   nexus: {
     label: 'Nexus de Fusion',
     description: '+8% de production par niveau pour chaque bâtiment adjacent',
-    placementCost: { cycles: 40, biomasse: 25 },
-    constructionTime: 15,
+    placementCost: { cycles: 70, biomasse: 20 },
+    constructionTime: 14,
     prerequisite: 'incubateur',
     slot: { q: -2, r: 0 },
     requiresAgents: false,
@@ -56,7 +56,7 @@ export const BUILDING_TYPES = {
   regulateur: {
     label: 'Régulateur',
     description: 'Convertit un flux de Cycles en Biomasse',
-    placementCost: { cycles: 35, biomasse: 10 },
+    placementCost: { cycles: 60, biomasse: 20 },
     constructionTime: 12,
     prerequisite: 'incubateur',
     slot: { q: -2, r: 2 },
@@ -116,11 +116,11 @@ export function visualTier(level) {
 export const AGENT_CAP_TIERS = [5, 10, 15, 20, 25, 30];
 
 export const AGENT_CAP_UPGRADE_COSTS = [
-  { cycles: 100, biomasse: 50 },
-  { cycles: 300, biomasse: 150 },
-  { cycles: 800, biomasse: 400 },
-  { cycles: 2000, biomasse: 1000 },
-  { cycles: 5000, biomasse: 2500 },
+  { cycles: 80, biomasse: 30 },
+  { cycles: 250, biomasse: 120 },
+  { cycles: 700, biomasse: 350 },
+  { cycles: 1800, biomasse: 900 },
+  { cycles: 4500, biomasse: 2200 },
 ];
 
 export function agentCapForTier(tier) {
@@ -135,8 +135,8 @@ export function agentCapUpgradeCost(currentTier) {
 // Recrutement d'Agents
 // ============================================
 
-const RECRUIT_BASE_COST = 15;
-const RECRUIT_COST_GROWTH = 1.22;
+const RECRUIT_BASE_COST = 12;
+const RECRUIT_COST_GROWTH = 1.2;
 
 export function recruitCost(currentAgentCount) {
   return Math.ceil(RECRUIT_BASE_COST * Math.pow(RECRUIT_COST_GROWTH, currentAgentCount - 5));

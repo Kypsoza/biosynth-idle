@@ -64,13 +64,13 @@ function formatRate(n) {
 // Icônes de bâtiments thématisées
 // ============================================
 
-function smallHexPoints(cx, cy, r) {
-  const pts = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 180) * (60 * i - 30);
-    pts.push(`${(cx + r * Math.cos(angle)).toFixed(1)},${(cy + r * Math.sin(angle)).toFixed(1)}`);
-  }
-  return pts.join(' ');
+// Grappe de cercles superposés : base organique commune à toutes les icônes
+function cellCluster(x, y, radius, grad, style) {
+  return `<g class="hex-building-core" style="${style}">
+    <circle cx="${(x - radius * 0.3).toFixed(1)}" cy="${(y - radius * 0.2).toFixed(1)}" r="${(radius * 0.55).toFixed(1)}" fill="${grad}" opacity="0.75"/>
+    <circle cx="${(x + radius * 0.32).toFixed(1)}" cy="${(y + radius * 0.18).toFixed(1)}" r="${(radius * 0.42).toFixed(1)}" fill="${grad}" opacity="0.75"/>
+    <circle cx="${x}" cy="${y}" r="${(radius * 0.68).toFixed(1)}" fill="${grad}"/>
+  </g>`;
 }
 
 function buildingIconMarkup(type, x, y, radius, opacity = 1) {
@@ -79,39 +79,61 @@ function buildingIconMarkup(type, x, y, radius, opacity = 1) {
   const style = `color:${color};opacity:${opacity}`;
 
   if (type === 'synapse') {
+    // Cellule neuronale : cœur + dendrites bioluminescentes fines
     let dendrites = '';
-    for (const angle of [45, 135, 225, 315]) {
+    for (const angle of [30, 100, 190, 260, 320]) {
       const rad = (angle * Math.PI) / 180;
-      const x2 = x + Math.cos(rad) * radius * 1.4;
-      const y2 = y + Math.sin(rad) * radius * 1.4;
-      dendrites += `<line x1="${x}" y1="${y}" x2="${x2}" y2="${y2}" stroke="url(#metalGold)" stroke-width="1.4"/><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="1.8" fill="#FFE9A8"/>`;
+      const x2 = x + Math.cos(rad) * radius * 1.5;
+      const y2 = y + Math.sin(rad) * radius * 1.5;
+      const xm = x + Math.cos(rad) * radius * 0.9;
+      const ym = y + Math.sin(rad) * radius * 0.9;
+      dendrites += `<path d="M${x},${y} Q${xm.toFixed(1)},${ym.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}" stroke="${color}" stroke-width="1" opacity="0.55" fill="none"/><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="1.4" fill="${color}" opacity="0.8"/>`;
     }
-    return `<g class="hex-building-core" style="${style}">${dendrites}<circle cx="${x}" cy="${y}" r="${radius * 0.62}" fill="${grad}"/></g>`;
+    return `<g style="${style}">${dendrites}${cellCluster(x, y, radius, grad, style)}</g>`;
   }
   if (type === 'incubateur') {
-    return `<polygon class="hex-building-core" style="${style}" points="${smallHexPoints(x, y, radius)}" fill="${grad}"/>`;
+    // Cocon/gousse : cellule allongée avec petites spores autour
+    let spores = '';
+    for (const [dx, dy] of [[-0.8, -0.6], [0.9, -0.4], [-0.5, 0.9], [0.7, 0.7]]) {
+      spores += `<circle cx="${(x + dx * radius).toFixed(1)}" cy="${(y + dy * radius).toFixed(1)}" r="${(radius * 0.16).toFixed(1)}" fill="${grad}" opacity="0.6"/>`;
+    }
+    return `<g class="hex-building-core" style="${style}">
+      ${spores}
+      <ellipse cx="${x}" cy="${y}" rx="${(radius * 0.65).toFixed(1)}" ry="${(radius * 0.85).toFixed(1)}" fill="${grad}"/>
+    </g>`;
   }
   if (type === 'nexus') {
-    let nubs = '';
-    for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
-      const nx = x + dx * radius * 1.3;
-      const ny = y + dy * radius * 1.3;
-      nubs += `<line x1="${x}" y1="${y}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="url(#metalGold)" stroke-width="1.3"/><circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="1.6" fill="#FFE9A8"/>`;
+    // Fusion de plusieurs cellules reliées par de fines veines
+    let veins = '';
+    const satellites = [[0, -1], [0.95, 0.55], [-0.95, 0.55]];
+    for (const [dx, dy] of satellites) {
+      const nx = x + dx * radius * 1.2;
+      const ny = y + dy * radius * 1.2;
+      veins += `<line x1="${x}" y1="${y}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${color}" stroke-width="1" opacity="0.5"/><circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="${(radius * 0.32).toFixed(1)}" fill="${grad}" opacity="0.85"/>`;
     }
-    return `<g class="hex-building-core" style="${style}">${nubs}<rect x="${(x - radius * 0.6).toFixed(1)}" y="${(y - radius * 0.6).toFixed(1)}" width="${(radius * 1.2).toFixed(1)}" height="${(radius * 1.2).toFixed(1)}" fill="${grad}" transform="rotate(45 ${x} ${y})"/></g>`;
+    return `<g class="hex-building-core" style="${style}">${veins}<circle cx="${x}" cy="${y}" r="${(radius * 0.5).toFixed(1)}" fill="${grad}"/></g>`;
   }
   if (type === 'regulateur') {
+    // Deux lobes reliés par un col étroit (régulation de flux)
+    const off = radius * 0.55;
     return `<g class="hex-building-core" style="${style}">
-      <circle cx="${x}" cy="${y}" r="${radius * 0.8}" fill="${grad}"/>
-      <rect x="${(x - 2).toFixed(1)}" y="${(y - radius - 3).toFixed(1)}" width="4" height="6" fill="url(#metalGold)"/>
-      <rect x="${(x - 2).toFixed(1)}" y="${(y + radius - 3).toFixed(1)}" width="4" height="6" fill="url(#metalGold)"/>
+      <line x1="${x}" y1="${(y - off).toFixed(1)}" x2="${x}" y2="${(y + off).toFixed(1)}" stroke="${color}" stroke-width="2.5" opacity="0.5"/>
+      <circle cx="${x}" cy="${(y - off).toFixed(1)}" r="${(radius * 0.5).toFixed(1)}" fill="${grad}"/>
+      <circle cx="${x}" cy="${(y + off).toFixed(1)}" r="${(radius * 0.5).toFixed(1)}" fill="${grad}"/>
     </g>`;
   }
   if (type === 'energie') {
-    const p = (dx, dy) => `${(x + dx * radius).toFixed(1)},${(y + dy * radius).toFixed(1)}`;
-    return `<path class="hex-building-core" style="${style}" d="M ${p(0.25, -1)} L ${p(-0.45, 0.15)} L ${p(0, 0.15)} L ${p(-0.25, 1)} L ${p(0.45, -0.15)} L ${p(0, -0.15)} Z" fill="${grad}"/>`;
+    // Étincelle bioluminescente : petit cœur + courtes décharges
+    let sparks = '';
+    for (const angle of [20, 100, 200, 300]) {
+      const rad = (angle * Math.PI) / 180;
+      const x2 = x + Math.cos(rad) * radius * 1.2;
+      const y2 = y + Math.sin(rad) * radius * 1.2;
+      sparks += `<line x1="${x}" y1="${y}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="1.2" opacity="0.6"/>`;
+    }
+    return `<g class="hex-building-core" style="${style}">${sparks}<circle cx="${x}" cy="${y}" r="${(radius * 0.55).toFixed(1)}" fill="${grad}"/></g>`;
   }
-  return `<circle class="hex-building-core" style="${style}" cx="${x}" cy="${y}" r="${radius}" fill="${grad}"/>`;
+  return cellCluster(x, y, radius, grad, style);
 }
 
 function shadeColor(hex, percent) {
@@ -126,50 +148,37 @@ function shadeColor(hex, percent) {
 }
 
 function buildDefsMarkup() {
-  const buildingColors = { noyau: NOYAU_COLOR };
+  const buildingColors = {};
   for (const [type, def] of Object.entries(BUILDING_TYPES)) buildingColors[type] = def.color;
 
   const gradientDefs = Object.entries(buildingColors).map(([type, color]) => `
-    <radialGradient id="grad-${type}" cx="35%" cy="30%" r="70%">
+    <radialGradient id="grad-${type}" cx="35%" cy="30%" r="75%">
       <stop offset="0%" stop-color="${shadeColor(color, 90)}"/>
-      <stop offset="45%" stop-color="${color}"/>
-      <stop offset="100%" stop-color="${shadeColor(color, -70)}"/>
+      <stop offset="40%" stop-color="${color}"/>
+      <stop offset="100%" stop-color="${shadeColor(color, -85)}"/>
     </radialGradient>
   `).join('');
 
   return `
     <defs>
       ${gradientDefs}
-      <linearGradient id="metalGold" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#FFE9A8"/>
-        <stop offset="50%" stop-color="#D4AF37"/>
-        <stop offset="100%" stop-color="#6B4423"/>
-      </linearGradient>
       <radialGradient id="noyauGrad" cx="35%" cy="30%" r="75%">
-        <stop offset="0%" stop-color="#FFF6DC"/>
-        <stop offset="45%" stop-color="#FFE9A8"/>
-        <stop offset="80%" stop-color="#D4AF37"/>
-        <stop offset="100%" stop-color="#6B4423"/>
+        <stop offset="0%" stop-color="#FFFFFF"/>
+        <stop offset="35%" stop-color="#00F0D8"/>
+        <stop offset="75%" stop-color="#0A8A80"/>
+        <stop offset="100%" stop-color="#06070C"/>
       </radialGradient>
-      <radialGradient id="ledHalo" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#FFE9A8" stop-opacity="0.9"/>
-        <stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/>
+      <radialGradient id="noyauHalo" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#00F0D8" stop-opacity="0.85"/>
+        <stop offset="100%" stop-color="#00F0D8" stop-opacity="0"/>
       </radialGradient>
-      <pattern id="circuitPattern" patternUnits="userSpaceOnUse" width="52" height="52">
-        <path d="M4,26 H20 L24,22 V8 M32,26 H48 M26,30 V44 L30,48"
-          stroke="#D4AF37" stroke-width="1.3" opacity="0.5" fill="none" stroke-linecap="round"/>
-        <path d="M26,4 V16 M4,4 H14 M38,4 V14 L44,20 H48"
-          stroke="#B8763F" stroke-width="1" opacity="0.35" fill="none" stroke-linecap="round"/>
-        <rect x="6" y="34" width="8" height="4" rx="1" fill="none" stroke="#C97F4F" stroke-width="1" opacity="0.4"/>
-        <circle cx="26" cy="26" r="2.4" fill="#FFE9A8" opacity="0.7"/>
-        <circle cx="24" cy="22" r="1.3" fill="#D4AF37" opacity="0.55"/>
-        <circle cx="32" cy="26" r="1.3" fill="#D4AF37" opacity="0.55"/>
-        <circle cx="4" cy="26" r="1.1" fill="#D4AF37" opacity="0.45"/>
-        <circle cx="48" cy="26" r="1.1" fill="#D4AF37" opacity="0.45"/>
+      <pattern id="veinPattern" patternUnits="userSpaceOnUse" width="60" height="60">
+        <path d="M4,30 Q18,14 30,30 T56,30" stroke="#00F0D8" stroke-width="1" opacity="0.3" fill="none"/>
+        <path d="M30,4 Q42,18 30,30 Q18,42 30,56" stroke="#7CFF3C" stroke-width="0.8" opacity="0.25" fill="none"/>
+        <circle cx="30" cy="30" r="1.8" fill="#00F0D8" opacity="0.45"/>
+        <circle cx="4" cy="30" r="1.1" fill="#00F0D8" opacity="0.3"/>
+        <circle cx="56" cy="30" r="1.1" fill="#7CFF3C" opacity="0.3"/>
       </pattern>
-      <filter id="metalShadow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
-      </filter>
     </defs>
   `;
 }
@@ -212,10 +221,12 @@ export function renderGrid(selectedKey) {
     if (isNoyau) {
       classes.push('hex-tile--noyau');
       if (selectedKey === key) classes.push('hex-tile--selected');
-      const half = 17;
-      inner += `<circle class="hex-noyau-halo" cx="${x}" cy="${y}" r="30" fill="url(#ledHalo)"></circle>`;
-      inner += `<rect class="hex-building-ring" x="${x - half - 4}" y="${y - half - 4}" width="${(half + 4) * 2}" height="${(half + 4) * 2}" rx="4" fill="none" stroke="url(#metalGold)" stroke-width="2"></rect>`;
-      inner += `<rect x="${x - half}" y="${y - half}" width="${half * 2}" height="${half * 2}" rx="3" fill="url(#noyauGrad)" transform="rotate(45 ${x} ${y})"></rect>`;
+      inner += `<circle class="hex-noyau-halo" cx="${x}" cy="${y}" r="32" fill="url(#noyauHalo)"></circle>`;
+      inner += `<g class="hex-noyau-heart">
+        <circle cx="${(x - 6).toFixed(1)}" cy="${(y - 5).toFixed(1)}" r="13" fill="url(#noyauGrad)" opacity="0.85"/>
+        <circle cx="${(x + 7).toFixed(1)}" cy="${(y + 4).toFixed(1)}" r="11" fill="url(#noyauGrad)" opacity="0.85"/>
+        <circle cx="${x}" cy="${y}" r="16" fill="url(#noyauGrad)"/>
+      </g>`;
     } else if (slotType) {
       const type = slotType;
       const def = BUILDING_TYPES[type];
@@ -235,9 +246,9 @@ export function renderGrid(selectedKey) {
         const pct = Math.max(0, Math.min(1, 1 - tile.building.remainingTime / tile.building.totalTime));
         const barW = 40;
         inner += `
-          <rect x="${x - barW / 2}" y="${y + 20}" width="${barW}" height="6" rx="3" fill="var(--color-bg)" stroke="var(--color-bronze)"></rect>
-          <rect data-progress-for="${key}" x="${x - barW / 2}" y="${y + 20}" width="${(barW * pct).toFixed(1)}" height="6" rx="3" fill="url(#metalGold)"></rect>
-          <text class="hex-tile-level-badge" x="${x}" y="${y + 38}" text-anchor="middle">Construction…</text>
+          <rect x="${x - barW / 2}" y="${y + 20}" width="${barW}" height="6" rx="3" fill="var(--color-bg)" stroke="var(--color-border)"></rect>
+          <rect data-progress-for="${key}" x="${x - barW / 2}" y="${y + 20}" width="${(barW * pct).toFixed(1)}" height="6" rx="3" fill="var(--color-green)"></rect>
+          <text class="hex-tile-level-badge" x="${x}" y="${y + 38}" text-anchor="middle">Croissance…</text>
         `;
       } else {
         // built
@@ -245,7 +256,6 @@ export function renderGrid(selectedKey) {
         const tier = visualTier(level);
         classes.push(`hex-tile--tier-${tier}`);
         const radius = 8 + tier * 2.5;
-        inner += `<circle class="hex-building-ring" cx="${x}" cy="${y}" r="${radius + 3}" fill="none" stroke="url(#metalGold)" stroke-width="1.6"></circle>`;
         inner += buildingIconMarkup(type, x, y, radius, 1);
         inner += `<text class="hex-tile-level-badge" x="${x}" y="${y + radius + 14}" text-anchor="middle">Nv.${level}</text>`;
 
@@ -265,9 +275,9 @@ export function renderGrid(selectedKey) {
         }
       }
     } else {
-      // Case purement décorative (atmosphère de la carte mère)
+      // Case purement décorative (tissu vivant en arrière-plan)
       classes.push('hex-tile--decor');
-      inner += `<polygon class="hex-tile-circuit-overlay" points="${hexCorners(x, y)}"></polygon>`;
+      inner += `<polygon class="hex-tile-vein-overlay" points="${hexCorners(x, y)}" fill="url(#veinPattern)"></polygon>`;
     }
 
     svgParts.push(`

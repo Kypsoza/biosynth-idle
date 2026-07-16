@@ -1,61 +1,46 @@
 /* ============================================
    BIOSYNTH IDLE — Design tokens
-   Carte mère biomécanique : gravures or/cuivre sur substrat bronze sombre
+   "Substrat Vivant" : bioluminescence organique, une IA qui s'éveille
    ============================================ */
 
 :root {
-  /* Palette de fond — brun/bronze sombre plutôt que bleu-violet */
-  --color-bg: #120D08;
-  --color-bg-panel: #1C140D;
-  --color-bg-panel-raised: #291D12;
-  --color-border: #4A3620;
+  /* Fond : profondeur cellulaire, presque noir, à peine teinté bleu-violet */
+  --color-bg: #06070C;
+  --color-bg-panel: #0D1018;
+  --color-bg-panel-raised: #141824;
+  --color-border: #2A3244;
 
-  /* Couleurs fonctionnelles des ressources (restent lisibles/distinctes) */
-  --color-cyan: #00D9FF;
-  --color-cyan-dim: #0A8AA6;
-  --color-green: #39FF14;
-  --color-green-dim: #24A60D;
-  --color-magenta: #B026FF;
-  --color-alert: #FF4500;
-  --color-blue: #4DA6FF;
-  --color-amber: #FFB627;
+  /* Bioluminescence primaire : Cycles de Calcul (pensée numérique) */
+  --color-cyan: #00F0D8;
+  --color-cyan-dim: #0A8A80;
 
-  /* Accents métalliques — gravures dominantes de toute la DA */
-  --color-gold: #D4AF37;
-  --color-gold-light: #F5E7A3;
-  --color-gold-bright: #FFE9A8;
-  --color-bronze: #B8763F;
-  --color-bronze-dark: #6B4423;
-  --color-copper: #C97F4F;
+  /* Bioluminescence secondaire : Biomasse Numérique (croissance organique) */
+  --color-green: #7CFF3C;
+  --color-green-dim: #4CA820;
 
-  --color-text: #F0E6D2;
-  --color-text-dim: #A89678;
+  /* Accents narratifs */
+  --color-magenta: #FF3EC9;   /* corruption / Virus Souche (menace future) */
+  --color-alert: #FF4D4D;
+  --color-blue: #4DA6FF;      /* Régulateur */
+  --color-amber: #FFC65C;     /* Énergie — étincelle vitale, discrète */
 
-  --font-display: 'Segoe UI', 'Trebuchet MS', sans-serif;
+  --color-text: #E4F6F2;
+  --color-text-dim: #7C93A0;
+
+  --font-display: 'Exo 2', 'Segoe UI', sans-serif;
   --font-body: 'Segoe UI', system-ui, sans-serif;
 
-  --radius: 10px;
-  --outline-width: 2px;
+  --radius: 14px;
+  --outline-width: 1.5px;
 
-  --glow-cyan: 0 0 12px rgba(0, 217, 255, 0.6);
-  --glow-green: 0 0 12px rgba(57, 255, 20, 0.55);
-  --glow-alert: 0 0 14px rgba(255, 69, 0, 0.65);
-  --glow-magenta: 0 0 12px rgba(176, 38, 255, 0.6);
+  --glow-cyan: 0 0 14px rgba(0, 240, 216, 0.65);
+  --glow-green: 0 0 14px rgba(124, 255, 60, 0.6);
+  --glow-alert: 0 0 14px rgba(255, 77, 77, 0.65);
+  --glow-magenta: 0 0 14px rgba(255, 62, 201, 0.6);
   --glow-blue: 0 0 12px rgba(77, 166, 255, 0.6);
-  --glow-amber: 0 0 12px rgba(255, 182, 39, 0.6);
-  --glow-gold: 0 0 10px rgba(255, 233, 168, 0.65);
+  --glow-amber: 0 0 12px rgba(255, 198, 92, 0.55);
 
-  --panel-shadow: inset 0 0 26px rgba(0, 0, 0, 0.45), 0 3px 10px rgba(0, 0, 0, 0.5);
-
-  /* Texture "métal brossé" : fines rayures diagonales à très faible opacité */
-  --brushed-metal:
-    repeating-linear-gradient(
-      115deg,
-      rgba(255, 224, 160, 0.025) 0px,
-      rgba(255, 224, 160, 0.025) 1px,
-      transparent 1px,
-      transparent 4px
-    );
+  --panel-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -67,8 +52,8 @@ html, body {
   padding: 0;
   height: 100%;
   background:
-    radial-gradient(ellipse at center, rgba(255, 182, 39, 0.06), transparent 65%),
-    var(--brushed-metal),
+    radial-gradient(ellipse at 30% 20%, rgba(0, 240, 216, 0.05), transparent 55%),
+    radial-gradient(ellipse at 70% 80%, rgba(124, 255, 60, 0.04), transparent 55%),
     var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
@@ -82,12 +67,12 @@ button {
 
 button:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--color-gold);
+  outline: 2px solid var(--color-cyan);
   outline-offset: 2px;
 }
 
 /* ============================================
-   HUD — toutes les ressources et effectifs, centrés
+   HUD
    ============================================ */
 
 .hud {
@@ -97,8 +82,8 @@ button:focus-visible,
   gap: 8px;
   padding: 10px 20px 14px;
   background: linear-gradient(180deg, var(--color-bg-panel), var(--color-bg));
-  border-bottom: var(--outline-width) solid var(--color-bronze-dark);
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+  border-bottom: var(--outline-width) solid var(--color-border);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.55);
 }
 
 .hud-top-row {
@@ -119,8 +104,8 @@ button:focus-visible,
 
 .hud-strate .hud-value {
   font-weight: 700;
-  color: var(--color-gold-light);
-  text-shadow: var(--glow-gold);
+  color: var(--color-cyan);
+  text-shadow: var(--glow-cyan);
   margin-left: 6px;
 }
 
@@ -141,7 +126,7 @@ button:focus-visible,
 
 .hud-agents-row {
   padding-top: 6px;
-  border-top: 1px solid rgba(107, 68, 35, 0.5);
+  border-top: 1px solid rgba(42, 50, 68, 0.6);
 }
 
 .hud-stat {
@@ -161,7 +146,7 @@ button:focus-visible,
 
 .hud-stat-value {
   font-weight: 700;
-  color: var(--color-gold-light);
+  color: var(--color-text);
 }
 
 .resource-icon--cycles { text-shadow: var(--glow-cyan); }
@@ -170,7 +155,7 @@ button:focus-visible,
 .resource-icon--adn { text-shadow: var(--glow-magenta); }
 
 .hud-stat--future {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 /* ============================================
@@ -204,7 +189,7 @@ button:focus-visible,
 }
 
 /* ============================================
-   CARTE HEXAGONALE — carte mère biomécanique
+   CARTE — substrat vivant bioluminescent
    ============================================ */
 
 .map-zone {
@@ -212,8 +197,8 @@ button:focus-visible,
   flex-direction: column;
   gap: 10px;
   padding: 20px;
-  background: linear-gradient(160deg, var(--color-bg-panel) 0%, var(--color-bg) 100%), var(--brushed-metal);
-  border: var(--outline-width) solid var(--color-bronze-dark);
+  background: radial-gradient(ellipse at center, var(--color-bg-panel) 0%, var(--color-bg) 100%);
+  border: var(--outline-width) solid var(--color-border);
   border-radius: var(--radius);
   box-shadow: var(--panel-shadow);
 }
@@ -240,28 +225,28 @@ button:focus-visible,
 
 .hex-tile-shape {
   stroke: var(--color-border);
-  stroke-width: 2;
+  stroke-width: 1.5;
   transition: filter 0.15s ease, stroke 0.15s ease;
   cursor: pointer;
   pointer-events: all;
 }
 
 .hex-tile-shape:hover {
-  filter: brightness(1.3);
+  filter: brightness(1.35);
 }
 
-/* Cases décoratives : atmosphère de fond, non interactives */
+/* Cases décoratives : tissu de fond, non interactif */
 .hex-tile--decor .hex-tile-shape {
   fill: var(--color-bg);
   stroke: var(--color-border);
-  opacity: 0.32;
+  opacity: 0.25;
   cursor: default;
   pointer-events: none;
 }
 
-.hex-tile--decor .hex-tile-circuit-overlay {
-  fill: url(#circuitPattern);
-  opacity: 0.3;
+.hex-tile--decor .hex-tile-vein-overlay {
+  stroke: var(--color-cyan);
+  opacity: 0.12;
   pointer-events: none;
 }
 
@@ -269,41 +254,39 @@ button:focus-visible,
 .hex-tile--slot-locked .hex-tile-shape {
   fill: var(--color-bg-panel);
   stroke: var(--color-border);
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .hex-tile--slot-buildable .hex-tile-shape {
   fill: var(--color-bg-panel);
-  stroke: var(--color-amber);
-  stroke-width: 2.5;
-  stroke-dasharray: 5 4;
-  animation: frontier-pulse 1.6s ease-in-out infinite;
+  stroke: var(--color-cyan);
+  stroke-width: 2;
+  animation: membrane-pulse 2.2s ease-in-out infinite;
 }
 
 .hex-tile--slot-constructing .hex-tile-shape {
   fill: var(--color-bg-panel-raised);
-  stroke: var(--color-gold);
-  stroke-width: 2.5;
+  stroke: var(--color-green);
+  stroke-width: 2;
 }
 
 .hex-tile--slot-built .hex-tile-shape {
   fill: var(--color-bg-panel-raised);
-  stroke: var(--color-bronze);
+  stroke: var(--color-border);
 }
 
-@keyframes frontier-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+@keyframes membrane-pulse {
+  0%, 100% { opacity: 1; stroke-width: 2; }
+  50% { opacity: 0.5; stroke-width: 1.2; }
 }
 
 .hex-tile--selected .hex-tile-shape {
-  stroke: var(--color-gold-bright);
-  stroke-width: 3;
+  stroke: var(--color-text);
+  stroke-width: 2.5;
 }
 
-.hex-tile-circuit-overlay {
-  fill: url(#circuitPattern);
-  opacity: 0.4;
+.hex-tile-vein-overlay {
+  stroke: none;
   pointer-events: none;
 }
 
@@ -314,12 +297,13 @@ button:focus-visible,
 
 .hex-tile-glyph--lock {
   fill: var(--color-text-dim);
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .hex-tile-glyph--build {
-  fill: var(--color-gold-light);
+  fill: var(--color-cyan);
   font-weight: 700;
+  text-shadow: var(--glow-cyan);
 }
 
 .hex-tile-level-badge {
@@ -329,27 +313,43 @@ button:focus-visible,
   fill: var(--color-text);
 }
 
-.hex-building-ring {
-  pointer-events: none;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+.hex-tile--tier-1 .hex-building-core { filter: drop-shadow(0 0 4px currentColor); }
+.hex-tile--tier-2 .hex-building-core { filter: drop-shadow(0 0 9px currentColor); }
+.hex-tile--tier-3 .hex-building-core { filter: drop-shadow(0 0 15px currentColor); }
+.hex-tile--tier-4 .hex-building-core { filter: drop-shadow(0 0 22px currentColor); }
+
+/* Le Noyau : un cœur vivant qui bat */
+.hex-noyau-heart {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: heartbeat 2.4s ease-in-out infinite;
 }
 
-.hex-tile--tier-1 .hex-building-core { filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 2px 2px rgba(0,0,0,0.5)); }
-.hex-tile--tier-2 .hex-building-core { filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
-.hex-tile--tier-3 .hex-building-core { filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 3px 4px rgba(0,0,0,0.55)); }
-.hex-tile--tier-4 .hex-building-core { filter: drop-shadow(0 0 18px currentColor) drop-shadow(0 3px 5px rgba(0,0,0,0.6)); }
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.12); }
+  30% { transform: scale(0.98); }
+  45% { transform: scale(1.08); }
+  60% { transform: scale(1); }
+}
 
 .hex-noyau-halo {
   pointer-events: none;
-  filter: blur(6px);
-  opacity: 0.75;
+  filter: blur(8px);
+  opacity: 0.7;
+  animation: halo-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.55; }
+  30% { opacity: 0.85; }
 }
 
 /* Contrôles d'Agents intégrés directement sous chaque bâtiment sur la carte */
 .agent-inline-btn {
   fill: var(--color-bg-panel);
-  stroke: var(--color-gold);
-  stroke-width: 1.5;
+  stroke: var(--color-cyan);
+  stroke-width: 1.3;
   cursor: pointer;
 }
 
@@ -364,7 +364,7 @@ button:focus-visible,
 }
 
 .agent-inline-btn-label {
-  fill: var(--color-gold-light);
+  fill: var(--color-cyan);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -382,8 +382,8 @@ button:focus-visible,
    ============================================ */
 
 .build-menu-zone {
-  background: linear-gradient(160deg, var(--color-bg-panel) 0%, var(--color-bg-panel-raised) 100%), var(--brushed-metal);
-  border: var(--outline-width) solid var(--color-bronze-dark);
+  background: linear-gradient(160deg, var(--color-bg-panel) 0%, var(--color-bg-panel-raised) 100%);
+  border: var(--outline-width) solid var(--color-border);
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--panel-shadow);
@@ -404,32 +404,33 @@ button:focus-visible,
   gap: 6px;
   padding: 12px;
   background: var(--color-bg-panel-raised);
-  border: 1px solid var(--color-bronze-dark);
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
   text-align: center;
 }
 
 .build-card--buildable {
-  border-color: var(--color-gold);
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 216, 0.15);
 }
 
 .build-card--constructing {
-  border-color: var(--color-amber);
+  border-color: var(--color-green);
 }
 
 .build-card--built {
   border-color: var(--color-green-dim);
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
 .build-card--locked {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 .build-card-name {
   font-weight: 700;
   font-size: 0.9rem;
-  color: var(--color-gold-light);
+  color: var(--color-text);
 }
 
 .build-card-desc {
@@ -455,7 +456,7 @@ button:focus-visible,
   margin-top: 4px;
   background: var(--color-bg-panel);
   color: var(--color-text);
-  border: 1px solid var(--color-gold);
+  border: 1px solid var(--color-cyan);
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 0.85rem;
@@ -463,7 +464,7 @@ button:focus-visible,
 }
 
 .build-card-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -474,20 +475,24 @@ button:focus-visible,
   margin: 6px 0 0 0;
 }
 
+/* ============================================
+   PANNEAUX
+   ============================================ */
+
 .panel-title {
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-gold-light);
+  color: var(--color-cyan);
   margin: 0 0 12px 0;
   padding-bottom: 8px;
-  border-bottom: 2px solid var(--color-gold);
-  text-shadow: var(--glow-gold);
+  border-bottom: 1px solid var(--color-border);
+  text-shadow: var(--glow-cyan);
 }
 
 .shop-panel, .tile-info-panel {
-  background: linear-gradient(160deg, var(--color-bg-panel) 0%, var(--color-bg-panel-raised) 100%), var(--brushed-metal);
-  border: var(--outline-width) solid var(--color-bronze-dark);
+  background: linear-gradient(160deg, var(--color-bg-panel) 0%, var(--color-bg-panel-raised) 100%);
+  border: var(--outline-width) solid var(--color-border);
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--panel-shadow);
@@ -509,7 +514,7 @@ button:focus-visible,
   gap: 12px;
   padding: 10px;
   background: var(--color-bg-panel-raised);
-  border: 1px solid var(--color-bronze-dark);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -532,7 +537,7 @@ button:focus-visible,
 .shop-item-buy {
   background: var(--color-bg-panel);
   color: var(--color-text);
-  border: 1px solid var(--color-bronze);
+  border: 1px solid var(--color-cyan-dim);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 0.8rem;
@@ -556,14 +561,10 @@ button:focus-visible,
 .cost-biomasse { color: var(--color-green); font-weight: 700; }
 .cost-energie { color: var(--color-amber); font-weight: 700; }
 
-/* ============================================
-   PANNEAU AGENTS (recrutement)
-   ============================================ */
-
 .agents-cap-info {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--color-bronze-dark);
+  border-top: 1px solid var(--color-border);
   font-size: 0.8rem;
   color: var(--color-text-dim);
 }
@@ -571,10 +572,6 @@ button:focus-visible,
 .agents-cap-info strong {
   color: var(--color-text);
 }
-
-/* ============================================
-   PANNEAU D'INFO DE CASE
-   ============================================ */
 
 .tile-info-empty {
   color: var(--color-text-dim);
@@ -601,21 +598,12 @@ button:focus-visible,
   text-align: right;
 }
 
-.build-option-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .tile-action-btn {
   width: 100%;
   margin-top: 10px;
   background: var(--color-bg-panel);
   color: var(--color-text);
-  border: 1px solid var(--color-gold);
+  border: 1px solid var(--color-cyan);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 0.85rem;
@@ -635,39 +623,6 @@ button:focus-visible,
   margin-top: 10px;
 }
 
-.agent-assign-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin: 10px 0;
-}
-
-.agent-assign-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--color-bg-panel);
-  border: 2px solid var(--color-gold);
-  color: var(--color-gold-light);
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.agent-assign-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.agent-assign-count {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-text);
-  min-width: 24px;
-  text-align: center;
-}
-
 /* ============================================
    FOOTER / SAUVEGARDE
    ============================================ */
@@ -680,7 +635,7 @@ button:focus-visible,
   gap: 10px;
   padding: 12px 20px;
   background: linear-gradient(0deg, var(--color-bg-panel), var(--color-bg));
-  border-top: var(--outline-width) solid var(--color-bronze-dark);
+  border-top: var(--outline-width) solid var(--color-border);
 }
 
 .save-status {
@@ -709,6 +664,7 @@ button:focus-visible,
 
 @media (prefers-reduced-motion: reduce) {
   * {
+    animation: none !important;
     transition: none !important;
   }
 }
