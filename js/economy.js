@@ -269,7 +269,7 @@ export function getProductionRates() {
   }
 
   // 4. Multiplicateur global de la mutation Prolifération Cellulaire
-  const mult = gameState.mutations.synapseBoost.purchased ? 1.2 : 1;
+  const mult = gameState.mutations.synapseBoost?.purchased ? 1.2 : 1;
 
   return {
     cyclesPerSecond: cyclesPerSecond * mult,
@@ -279,7 +279,7 @@ export function getProductionRates() {
 }
 
 export function getEnergyConsumption() {
-  const reduction = gameState.mutations.metabolismeOptimise.purchased ? 0.8 : 1;
+  const reduction = gameState.mutations.metabolismeOptimise?.purchased ? 0.8 : 1;
   return gameState.agents.total * ENERGY_PER_AGENT * reduction;
 }
 

@@ -30,10 +30,10 @@ function init() {
     console.info('Aucune sauvegarde trouvée, nouvelle partie.');
   }
 
+  wireEvents(); // toujours attaché en premier : la grille reste cliquable même si un rendu échoue
   renderGrid(null);
   renderTileInfoPanel(null);
   renderStats();
-  wireEvents();
   startGameLoop();
   startAutosave((ok) => {
     if (ok) flashSaveStatus('Sauvegarde effectuée');

@@ -18,6 +18,24 @@ export function saveGame() {
   }
 }
 
+// Fusion profonde : préserve les valeurs par défaut de gameState pour tout champ absent
+// de l'ancienne sauvegarde (évite les crashs quand le schéma évolue entre deux versions)
+function deepMerge(target, source) {
+  for (const key of Object.keys(source)) {
+    const sourceVal = source[key];
+    const targetVal = target[key];
+    const bothAreObjects =
+      sourceVal && typeof sourceVal === 'object' && !Array.isArray(sourceVal) &&
+      targetVal && typeof targetVal === 'object' && !Array.isArray(targetVal);
+    if (bothAreObjects) {
+      deepMerge(targetVal, sourceVal);
+    } else {
+      target[key] = sourceVal;
+    }
+  }
+  return target;
+}
+
 export function loadGame() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return false;
@@ -25,10 +43,9 @@ export function loadGame() {
   try {
     const parsed = JSON.parse(raw);
     if (parsed.version !== SAVE_VERSION) {
-      // Phase future : gérer la migration entre versions de save
-      console.warn('Version de sauvegarde différente, chargement tel quel.');
+      console.warn('Version de sauvegarde différente, fusion avec les valeurs par défaut actuelles.');
     }
-    Object.assign(gameState, parsed);
+    deepMerge(gameState, parsed);
     return true;
   } catch (err) {
     console.error('Sauvegarde corrompue, impossible de charger :', err);
@@ -46,7 +63,7 @@ export function importSave(base64String) {
   try {
     const json = decodeURIComponent(atob(base64String.trim()));
     const parsed = JSON.parse(json);
-    Object.assign(gameState, parsed);
+    deepMerge(gameState, parsed);
     saveGame();
     return true;
   } catch (err) {
