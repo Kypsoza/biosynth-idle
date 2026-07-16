@@ -126,6 +126,8 @@ function buildingIconMarkup(type, x, y, radius) {
   // Repli par défaut : cercle simple
   return `<circle class="hex-building-core" style="color:${color}" cx="${x}" cy="${y}" r="${radius}" fill="${grad}"/>`;
 }
+
+function shadeColor(hex, percent) {
   const num = parseInt(hex.replace('#', ''), 16);
   let r = (num >> 16) + percent;
   let g = ((num >> 8) & 0x00ff) + percent;
