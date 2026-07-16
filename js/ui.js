@@ -34,9 +34,8 @@ const els = {
   resAdn: document.getElementById('res-adn'),
   saveStatus: document.getElementById('save-status'),
   coreProduction: document.getElementById('core-production'),
-  agentsSummary: document.getElementById('agents-summary'),
-  agentsTotal: document.getElementById('agents-total'),
-  agentsIdle: document.getElementById('agents-idle'),
+  agentsTotalHud: document.getElementById('agents-total-hud'),
+  agentsIdleHud: document.getElementById('agents-idle-hud'),
   recruitBtn: document.getElementById('recruit-btn'),
   recruitCost: document.getElementById('recruit-cost'),
   agentCapValue: document.getElementById('agent-cap-value'),
@@ -94,15 +93,31 @@ function buildDefsMarkup() {
     <defs>
       ${gradientDefs}
       <linearGradient id="metalGold" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#F5E7A3"/>
+        <stop offset="0%" stop-color="#FFE9A8"/>
         <stop offset="50%" stop-color="#D4AF37"/>
-        <stop offset="100%" stop-color="#8B5A2B"/>
+        <stop offset="100%" stop-color="#6B4423"/>
       </linearGradient>
-      <pattern id="circuitPattern" patternUnits="userSpaceOnUse" width="44" height="44" patternTransform="rotate(15)">
-        <path d="M0,22 H16 M28,22 H44 M22,0 V16 M22,28 V44" stroke="#D4AF37" stroke-width="1.1" opacity="0.45" fill="none"/>
-        <circle cx="22" cy="22" r="2" fill="#D4AF37" opacity="0.55"/>
-        <circle cx="16" cy="22" r="1.1" fill="#D4AF37" opacity="0.4"/>
-        <circle cx="28" cy="22" r="1.1" fill="#D4AF37" opacity="0.4"/>
+      <radialGradient id="noyauGrad" cx="35%" cy="30%" r="75%">
+        <stop offset="0%" stop-color="#FFF6DC"/>
+        <stop offset="45%" stop-color="#FFE9A8"/>
+        <stop offset="80%" stop-color="#D4AF37"/>
+        <stop offset="100%" stop-color="#6B4423"/>
+      </radialGradient>
+      <radialGradient id="ledHalo" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FFE9A8" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/>
+      </radialGradient>
+      <pattern id="circuitPattern" patternUnits="userSpaceOnUse" width="52" height="52" patternTransform="rotate(0)">
+        <path d="M4,26 H20 L24,22 V8 M32,26 H48 M26,30 V44 L30,48"
+          stroke="#D4AF37" stroke-width="1.3" opacity="0.5" fill="none" stroke-linecap="round"/>
+        <path d="M26,4 V16 M4,4 H14 M38,4 V14 L44,20 H48"
+          stroke="#B8763F" stroke-width="1" opacity="0.35" fill="none" stroke-linecap="round"/>
+        <rect x="6" y="34" width="8" height="4" rx="1" fill="none" stroke="#C97F4F" stroke-width="1" opacity="0.4"/>
+        <circle cx="26" cy="26" r="2.4" fill="#FFE9A8" opacity="0.7"/>
+        <circle cx="24" cy="22" r="1.3" fill="#D4AF37" opacity="0.55"/>
+        <circle cx="32" cy="26" r="1.3" fill="#D4AF37" opacity="0.55"/>
+        <circle cx="4" cy="26" r="1.1" fill="#D4AF37" opacity="0.45"/>
+        <circle cx="48" cy="26" r="1.1" fill="#D4AF37" opacity="0.45"/>
       </pattern>
       <filter id="metalShadow" x="-50%" y="-50%" width="200%" height="200%">
         <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
@@ -150,13 +165,19 @@ export function renderGrid(selectedKey) {
 
     if (state === 'built') {
       const { type, level, assignedAgents } = tile.building;
-      const tier = visualTier(level);
-      classes.push(`hex-tile--tier-${tier}`);
-      const color = type === 'noyau' ? NOYAU_COLOR : BUILDING_TYPES[type].color;
-      const radius = type === 'noyau' ? 15 : 8 + tier * 2.5;
-      inner += `<circle class="hex-building-ring" cx="${x}" cy="${y}" r="${radius + 3}" fill="none" stroke="url(#metalGold)" stroke-width="1.6"></circle>`;
-      inner += `<circle class="hex-building-core" cx="${x}" cy="${y}" r="${radius}" fill="url(#grad-${type})" style="color:${color}"></circle>`;
-      if (type !== 'noyau') {
+
+      if (type === 'noyau') {
+        const half = 17;
+        inner += `<circle class="hex-noyau-halo" cx="${x}" cy="${y}" r="30" fill="url(#ledHalo)"></circle>`;
+        inner += `<rect class="hex-building-ring" x="${x - half - 4}" y="${y - half - 4}" width="${(half + 4) * 2}" height="${(half + 4) * 2}" rx="4" fill="none" stroke="url(#metalGold)" stroke-width="2"></rect>`;
+        inner += `<rect x="${x - half}" y="${y - half}" width="${half * 2}" height="${half * 2}" rx="3" fill="url(#noyauGrad)" transform="rotate(45 ${x} ${y})" style="color:${NOYAU_COLOR}"></rect>`;
+      } else {
+        const tier = visualTier(level);
+        classes.push(`hex-tile--tier-${tier}`);
+        const color = BUILDING_TYPES[type].color;
+        const radius = 8 + tier * 2.5;
+        inner += `<circle class="hex-building-ring" cx="${x}" cy="${y}" r="${radius + 3}" fill="none" stroke="url(#metalGold)" stroke-width="1.6"></circle>`;
+        inner += `<circle class="hex-building-core" cx="${x}" cy="${y}" r="${radius}" fill="url(#grad-${type})" style="color:${color}"></circle>`;
         const agentBadge = assignedAgents !== undefined ? ` · ${assignedAgents}👤` : '';
         inner += `<text class="hex-tile-level-badge" x="${x}" y="${y + radius + 12}" text-anchor="middle">Nv.${level}${agentBadge}</text>`;
       }
@@ -336,13 +357,6 @@ function renderMutations() {
 // ============================================
 
 function renderAgentsPanel() {
-  const idle = idleAgents();
-  const assigned = totalAssignedAgents();
-
-  els.agentsTotal.textContent = formatNumber(gameState.agents.total);
-  els.agentsIdle.textContent = formatNumber(idle);
-  els.agentsSummary.textContent = `${assigned} / ${gameState.agents.total} assignés (${idle} inactifs)`;
-
   els.recruitCost.textContent = formatNumber(getRecruitCost());
   els.recruitBtn.disabled = !canRecruitAgent();
 
@@ -368,6 +382,9 @@ export function renderStats() {
   els.resEnergie.textContent = formatNumber(gameState.resources.energie);
   els.resBiomasse.textContent = formatNumber(gameState.resources.biomasse);
   els.resAdn.textContent = formatNumber(gameState.resources.adn);
+
+  els.agentsTotalHud.textContent = formatNumber(gameState.agents.total);
+  els.agentsIdleHud.textContent = formatNumber(idleAgents());
 
   const { cyclesPerSecond, biomassePerSecond, energiePerSecond } = getProductionRates();
   const consumption = getEnergyConsumption();

@@ -15,21 +15,25 @@
 </head>
 <body>
 
-  <!-- HUD supérieur : identité de la Strate + production globale -->
+  <!-- HUD supérieur : toutes les ressources et effectifs, centrés -->
   <header class="hud">
-    <div class="hud-strate">
-      <span class="hud-label">Strate</span>
-      <span class="hud-value" id="strate-name">01 — Éveil</span>
+    <div class="hud-top-row">
+      <span class="hud-strate"><span class="hud-label">Strate</span> <span class="hud-value" id="strate-name">01 — Éveil</span></span>
+      <span class="hud-production" id="core-production">+0 Cycles/s · +0 Biomasse/s · +0 Énergie/s</span>
     </div>
 
-    <div class="hud-production">
-      <span class="hud-label">Production</span>
-      <span class="hud-value" id="core-production">+0 Cycles/s · +0 Biomasse/s · +0 Énergie/s</span>
+    <div class="hud-resources-row">
+      <span class="hud-stat"><span class="resource-icon resource-icon--cycles">⚡</span><span class="hud-stat-value" id="res-cycles">0</span></span>
+      <span class="hud-stat"><span class="resource-icon resource-icon--energie">🔋</span><span class="hud-stat-value" id="res-energie">0</span></span>
+      <span class="hud-stat"><span class="resource-icon resource-icon--biomasse">🧬</span><span class="hud-stat-value" id="res-biomasse">0</span></span>
+      <span class="hud-stat"><span class="resource-icon resource-icon--adn">🌀</span><span class="hud-stat-value" id="res-adn">0</span></span>
     </div>
 
-    <div class="hud-agents">
-      <span class="hud-label">Agents</span>
-      <span class="hud-value" id="agents-summary">0 / 5 assignés (0 inactifs)</span>
+    <div class="hud-agents-row">
+      <span class="hud-stat"><span class="hud-stat-label">👤 Total</span><span class="hud-stat-value" id="agents-total-hud">5</span></span>
+      <span class="hud-stat"><span class="hud-stat-label">Inoccupés</span><span class="hud-stat-value" id="agents-idle-hud">5</span></span>
+      <span class="hud-stat hud-stat--future"><span class="hud-stat-label">🛡️ Soldats</span><span class="hud-stat-value" id="agents-soldats-hud">0</span></span>
+      <span class="hud-stat hud-stat--future"><span class="hud-stat-label">🔭 Explorateurs</span><span class="hud-stat-value" id="agents-explorateurs-hud">0</span></span>
     </div>
   </header>
 
@@ -43,44 +47,9 @@
       </div>
     </section>
 
-    <!-- Panneau ressources -->
-    <aside class="resources-panel" id="resources-panel">
-      <h2 class="panel-title">Ressources</h2>
-      <ul class="resource-list">
-        <li class="resource-row">
-          <span class="resource-icon resource-icon--cycles" aria-hidden="true">⚡</span>
-          <span class="resource-name">Cycles de Calcul</span>
-          <span class="resource-amount" id="res-cycles">0</span>
-        </li>
-        <li class="resource-row">
-          <span class="resource-icon resource-icon--energie" aria-hidden="true">🔋</span>
-          <span class="resource-name">Énergie</span>
-          <span class="resource-amount" id="res-energie">0</span>
-        </li>
-        <li class="resource-row">
-          <span class="resource-icon resource-icon--biomasse" aria-hidden="true">🧬</span>
-          <span class="resource-name">Biomasse Numérique</span>
-          <span class="resource-amount" id="res-biomasse">0</span>
-        </li>
-        <li class="resource-row">
-          <span class="resource-icon resource-icon--adn" aria-hidden="true">🌀</span>
-          <span class="resource-name">Brins d'ADN</span>
-          <span class="resource-amount" id="res-adn">0</span>
-        </li>
-      </ul>
-    </aside>
-
-    <!-- Panneau Agents : recrutement + plafond par bâtiment -->
+    <!-- Panneau Agents : recrutement + plafond par bâtiment (les effectifs sont dans le HUD) -->
     <section class="shop-panel" id="agents-panel">
-      <h2 class="panel-title">Agents</h2>
-      <div class="agents-stat-row">
-        <span>Total</span>
-        <strong id="agents-total">5</strong>
-      </div>
-      <div class="agents-stat-row">
-        <span>Inactifs</span>
-        <strong id="agents-idle">5</strong>
-      </div>
+      <h2 class="panel-title">Recrutement</h2>
       <button class="tile-action-btn" id="recruit-btn">
         Recruter un Agent — <span class="cost-energie" id="recruit-cost">15</span>🔋
       </button>
