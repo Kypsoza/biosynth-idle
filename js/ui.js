@@ -3,30 +3,45 @@
 // ============================================
 
 import { gameState } from './state.js';
-import { BUILDING_TYPES, NOYAU_COLOR, upgradeCost, buildingProductionAtLevel, visualTier } from './buildings.js';
+import { BUILDING_TYPES, NOYAU_COLOR, upgradeCost, productionPerAgentAtLevel, visualTier } from './buildings.js';
 import {
   MUTATION_DEFS,
   canBuyMutation,
   getProductionRates,
+  getEnergyConsumption,
   unlockCost,
   canUnlockTile,
   isTileUnlockable,
   canPlaceBuilding,
   canUpgradeBuilding,
+  currentAgentCap,
+  idleAgents,
+  totalAssignedAgents,
+  canAssignAgent,
+  canUnassignAgent,
+  getRecruitCost,
+  canRecruitAgent,
+  getAgentCapUpgradeCost,
+  canUpgradeAgentCap,
 } from './economy.js';
-import { MAX_RING, allTilesInRadius, axialToPixel, hexCorners, tileKey, hexDistance } from './hexgrid.js';
+import { MAX_RING, allTilesInRadius, axialToPixel, hexCorners, tileKey } from './hexgrid.js';
 
 const els = {
   strateName: document.getElementById('strate-name'),
-  resistanceFill: document.getElementById('resistance-fill'),
-  resistanceValue: document.getElementById('resistance-value'),
-  resistanceBar: document.getElementById('resistance-bar'),
   resCycles: document.getElementById('res-cycles'),
+  resEnergie: document.getElementById('res-energie'),
   resBiomasse: document.getElementById('res-biomasse'),
   resAdn: document.getElementById('res-adn'),
   saveStatus: document.getElementById('save-status'),
   coreProduction: document.getElementById('core-production'),
-  purgeAlert: document.getElementById('purge-alert'),
+  agentsSummary: document.getElementById('agents-summary'),
+  agentsTotal: document.getElementById('agents-total'),
+  agentsIdle: document.getElementById('agents-idle'),
+  recruitBtn: document.getElementById('recruit-btn'),
+  recruitCost: document.getElementById('recruit-cost'),
+  agentCapValue: document.getElementById('agent-cap-value'),
+  agentCapCost: document.getElementById('agent-cap-cost'),
+  upgradeCapBtn: document.getElementById('upgrade-cap-btn'),
   hexGrid: document.getElementById('hex-grid'),
   tileInfoPanel: document.getElementById('tile-info-panel'),
 };
@@ -52,10 +67,53 @@ function tileVisualState(q, r) {
   return isTileUnlockable(q, r) ? 'frontier' : 'far';
 }
 
+function shadeColor(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  let r = (num >> 16) + percent;
+  let g = ((num >> 8) & 0x00ff) + percent;
+  let b = (num & 0x0000ff) + percent;
+  r = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
+  b = Math.min(255, Math.max(0, b));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+function buildDefsMarkup() {
+  const buildingColors = { noyau: NOYAU_COLOR };
+  for (const [type, def] of Object.entries(BUILDING_TYPES)) buildingColors[type] = def.color;
+
+  const gradientDefs = Object.entries(buildingColors).map(([type, color]) => `
+    <radialGradient id="grad-${type}" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="${shadeColor(color, 90)}"/>
+      <stop offset="45%" stop-color="${color}"/>
+      <stop offset="100%" stop-color="${shadeColor(color, -70)}"/>
+    </radialGradient>
+  `).join('');
+
+  return `
+    <defs>
+      ${gradientDefs}
+      <linearGradient id="metalGold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#F5E7A3"/>
+        <stop offset="50%" stop-color="#D4AF37"/>
+        <stop offset="100%" stop-color="#8B5A2B"/>
+      </linearGradient>
+      <pattern id="circuitPattern" patternUnits="userSpaceOnUse" width="44" height="44" patternTransform="rotate(15)">
+        <path d="M0,22 H16 M28,22 H44 M22,0 V16 M22,28 V44" stroke="#D4AF37" stroke-width="1.1" opacity="0.45" fill="none"/>
+        <circle cx="22" cy="22" r="2" fill="#D4AF37" opacity="0.55"/>
+        <circle cx="16" cy="22" r="1.1" fill="#D4AF37" opacity="0.4"/>
+        <circle cx="28" cy="22" r="1.1" fill="#D4AF37" opacity="0.4"/>
+      </pattern>
+      <filter id="metalShadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
+      </filter>
+    </defs>
+  `;
+}
+
 export function renderGrid(selectedKey) {
   const allTiles = allTilesInRadius(MAX_RING);
 
-  // Calcul du viewBox englobant tous les hexagones + un peu de marge
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   const positions = allTiles.map(([q, r]) => {
     const { x, y } = axialToPixel(q, r);
@@ -69,7 +127,7 @@ export function renderGrid(selectedKey) {
   const viewBox = `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`;
   els.hexGrid.setAttribute('viewBox', viewBox);
 
-  const svgParts = [];
+  const svgParts = [buildDefsMarkup()];
 
   for (const { q, r, x, y } of positions) {
     const key = tileKey(q, r);
@@ -79,6 +137,10 @@ export function renderGrid(selectedKey) {
     if (selectedKey === key) classes.push('hex-tile--selected');
 
     let inner = '';
+    const showCircuitOverlay = state === 'built' || state === 'empty';
+    if (showCircuitOverlay) {
+      inner += `<polygon class="hex-tile-circuit-overlay" points="${hexCorners(x, y)}"></polygon>`;
+    }
 
     if (state === 'frontier') {
       inner += `<text class="hex-tile-glyph hex-tile-glyph--lock" x="${x}" y="${y + 6}" text-anchor="middle">🔒</text>`;
@@ -87,14 +149,16 @@ export function renderGrid(selectedKey) {
     }
 
     if (state === 'built') {
-      const { type, level } = tile.building;
+      const { type, level, assignedAgents } = tile.building;
       const tier = visualTier(level);
       classes.push(`hex-tile--tier-${tier}`);
       const color = type === 'noyau' ? NOYAU_COLOR : BUILDING_TYPES[type].color;
       const radius = type === 'noyau' ? 15 : 8 + tier * 2.5;
-      inner += `<circle class="hex-building-core" cx="${x}" cy="${y}" r="${radius}" fill="${color}" style="color:${color}"></circle>`;
+      inner += `<circle class="hex-building-ring" cx="${x}" cy="${y}" r="${radius + 3}" fill="none" stroke="url(#metalGold)" stroke-width="1.6"></circle>`;
+      inner += `<circle class="hex-building-core" cx="${x}" cy="${y}" r="${radius}" fill="url(#grad-${type})" style="color:${color}"></circle>`;
       if (type !== 'noyau') {
-        inner += `<text class="hex-tile-level-badge" x="${x}" y="${y + radius + 12}" text-anchor="middle">Nv.${level}</text>`;
+        const agentBadge = assignedAgents !== undefined ? ` · ${assignedAgents}👤` : '';
+        inner += `<text class="hex-tile-level-badge" x="${x}" y="${y + radius + 12}" text-anchor="middle">Nv.${level}${agentBadge}</text>`;
       }
     }
 
@@ -174,7 +238,7 @@ export function renderTileInfoPanel(selected) {
   }
 
   // state === 'built'
-  const { type, level } = tile.building;
+  const { type, level, assignedAgents } = tile.building;
 
   if (type === 'noyau') {
     panel.innerHTML = `
@@ -186,13 +250,28 @@ export function renderTileInfoPanel(selected) {
   }
 
   const def = BUILDING_TYPES[type];
-  const prod = buildingProductionAtLevel(type, level);
-  const prodLines = Object.entries(prod).map(([k, v]) => {
-    const label = k === 'cyclesPerSecond' ? 'Cycles/s' : 'Biomasse/s';
-    return `<div class="tile-info-stat"><span>${label}</span><strong>+${formatRate(v)}</strong></div>`;
-  }).join('');
-
   const isMaxed = level >= def.maxLevel;
+
+  let agentSection = '';
+  if (def.requiresAgents) {
+    const prod = productionPerAgentAtLevel(type, level);
+    const prodLines = Object.entries(prod).map(([k, v]) => {
+      const label = k === 'cyclesPerSecond' ? 'Cycles/s' : k === 'biomassePerSecond' ? 'Biomasse/s' : 'Énergie/s';
+      const total = v * assignedAgents;
+      return `<div class="tile-info-stat"><span>${label} (par Agent : ${formatRate(v)})</span><strong>+${formatRate(total)}</strong></div>`;
+    }).join('');
+
+    agentSection = `
+      <div class="tile-info-stat"><span>Agents assignés</span><strong>${assignedAgents} / ${currentAgentCap()}</strong></div>
+      <div class="agent-assign-controls">
+        <button class="agent-assign-btn" data-action="unassign-agent" data-q="${q}" data-r="${r}" ${canUnassignAgent(q, r) ? '' : 'disabled'}>−</button>
+        <span class="agent-assign-count">${assignedAgents}</span>
+        <button class="agent-assign-btn" data-action="assign-agent" data-q="${q}" data-r="${r}" ${canAssignAgent(q, r) ? '' : 'disabled'}>+</button>
+      </div>
+      ${prodLines}
+    `;
+  }
+
   let upgradeSection = `<p class="tile-max-level">Niveau maximum atteint</p>`;
   if (!isMaxed) {
     const cost = upgradeCost(type, level);
@@ -206,7 +285,7 @@ export function renderTileInfoPanel(selected) {
   panel.innerHTML = `
     <h2 class="panel-title">${def.label} — Niveau ${level}</h2>
     <p class="tile-info-desc">${def.description}</p>
-    ${prodLines}
+    ${agentSection}
     ${upgradeSection}
   `;
 }
@@ -225,6 +304,10 @@ export function updateTileInfoAffordability() {
       btn.disabled = !canPlaceBuilding(q, r, btn.dataset.type);
     } else if (action === 'upgrade') {
       btn.disabled = !canUpgradeBuilding(q, r);
+    } else if (action === 'assign-agent') {
+      btn.disabled = !canAssignAgent(q, r);
+    } else if (action === 'unassign-agent') {
+      btn.disabled = !canUnassignAgent(q, r);
     }
   });
 }
@@ -249,29 +332,52 @@ function renderMutations() {
 }
 
 // ============================================
+// Agents (panneau recrutement + plafond)
+// ============================================
+
+function renderAgentsPanel() {
+  const idle = idleAgents();
+  const assigned = totalAssignedAgents();
+
+  els.agentsTotal.textContent = formatNumber(gameState.agents.total);
+  els.agentsIdle.textContent = formatNumber(idle);
+  els.agentsSummary.textContent = `${assigned} / ${gameState.agents.total} assignés (${idle} inactifs)`;
+
+  els.recruitCost.textContent = formatNumber(getRecruitCost());
+  els.recruitBtn.disabled = !canRecruitAgent();
+
+  els.agentCapValue.textContent = currentAgentCap();
+  const capCost = getAgentCapUpgradeCost();
+  if (!capCost) {
+    els.agentCapCost.textContent = 'Palier maximum atteint';
+    els.upgradeCapBtn.disabled = true;
+  } else {
+    els.agentCapCost.innerHTML = `<span class="cost-cycles">${formatNumber(capCost.cycles)}⚡</span> / <span class="cost-biomasse">${formatNumber(capCost.biomasse)}🧬</span>`;
+    els.upgradeCapBtn.disabled = !canUpgradeAgentCap();
+  }
+}
+
+// ============================================
 // Ressources / stats globales (appelé à chaque tick)
 // ============================================
 
 export function renderStats() {
   els.strateName.textContent = gameState.strate.name;
 
-  const resistancePct = Math.min(100, Math.max(0, gameState.resistance));
-  els.resistanceFill.style.width = `${resistancePct}%`;
-  els.resistanceValue.textContent = `${Math.round(resistancePct)}%`;
-  els.resistanceBar.setAttribute('aria-valuenow', Math.round(resistancePct));
-
   els.resCycles.textContent = formatNumber(gameState.resources.cycles);
+  els.resEnergie.textContent = formatNumber(gameState.resources.energie);
   els.resBiomasse.textContent = formatNumber(gameState.resources.biomasse);
   els.resAdn.textContent = formatNumber(gameState.resources.adn);
 
-  const { cyclesPerSecond, biomassePerSecond } = getProductionRates();
-  els.coreProduction.textContent = `+${formatRate(cyclesPerSecond)} Cycles/s · +${formatRate(biomassePerSecond)} Biomasse/s`;
+  const { cyclesPerSecond, biomassePerSecond, energiePerSecond } = getProductionRates();
+  const consumption = getEnergyConsumption();
+  const netEnergie = energiePerSecond - consumption;
+  els.coreProduction.textContent = `+${formatRate(cyclesPerSecond)} Cycles/s · +${formatRate(biomassePerSecond)} Biomasse/s · ${netEnergie >= 0 ? '+' : ''}${formatRate(netEnergie)} Énergie/s`;
 
   renderMutations();
+  renderAgentsPanel();
 }
 
-// Rendu complet : stats + mutations (grille et panneau d'info gérés séparément
-// car ils n'ont besoin d'être reconstruits qu'après une action structurelle)
 export function renderAll() {
   renderStats();
 }
@@ -282,11 +388,4 @@ export function flashSaveStatus(message, durationMs = 2000) {
   setTimeout(() => {
     els.saveStatus.textContent = previous;
   }, durationMs);
-}
-
-export function showPurgeAlert() {
-  els.purgeAlert.hidden = false;
-  setTimeout(() => {
-    els.purgeAlert.hidden = true;
-  }, 2500);
 }

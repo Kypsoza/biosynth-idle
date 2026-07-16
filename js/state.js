@@ -4,7 +4,7 @@
 // Phase 0 : squelette de state, sans logique de production
 // (Synapses/Mutations/Résistance arrivent en Phase 1+)
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export function createDefaultState() {
   return {
@@ -20,10 +20,19 @@ export function createDefaultState() {
     resources: {
       cycles: 0,
       biomasse: 0,
+      energie: 20, // petite réserve de départ pour amortir les premiers recrutements
       adn: 0, // Brins d'ADN (permanent, ne reset jamais lors d'un Transfert de Noyau)
     },
 
-    // Grille hexagonale : clé "q,r" -> { unlocked, building: {type, level} | null }
+    // Pool d'Agents (main-d'œuvre) — Phase 2
+    agents: {
+      total: 5, // 5 Agents de départ, comme les habitants de Little Incrementisle
+    },
+
+    // Palier de plafond d'Agents par bâtiment (0 = 5 max, 1 = 10 max, etc.)
+    agentCapTier: 0,
+
+    // Grille hexagonale : clé "q,r" -> { unlocked, building: {type, level, assignedAgents} | null }
     // Le Noyau occupe toujours la case d'origine (0,0), fixe et indestructible
     tiles: {
       '0,0': { unlocked: true, building: { type: 'noyau', level: 1 } },
@@ -39,9 +48,6 @@ export function createDefaultState() {
 
     // Puissance de clic de base (modifiée par la mutation clickPower)
     clickPower: 1,
-
-    // Jauge de Résistance (0-100)
-    resistance: 0,
 
     // Horodatage de la dernière sauvegarde, utilisé pour le calcul des gains offline (Phase 8)
     lastSaveTimestamp: Date.now(),

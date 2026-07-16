@@ -2,12 +2,24 @@
 // buildings.js — Définitions des bâtiments de la grille
 // ============================================
 
+// Bâtiments producteurs : nécessitent des Agents assignés pour produire
+// (production = productionPerAgent x niveau x Agents assignés)
 export const BUILDING_TYPES = {
+  energie: {
+    label: 'Générateur d\'Énergie',
+    description: 'Produit de l\'Énergie, consommée en continu par vos Agents',
+    placementCost: { cycles: 12, biomasse: 0 },
+    requiresAgents: true,
+    productionPerAgent: { energiePerSecond: 0.8 },
+    maxLevel: 10,
+    color: '#FFB627',
+  },
   synapse: {
     label: 'Synapse',
     description: 'Production de Cycles de Calcul',
     placementCost: { cycles: 15, biomasse: 0 },
-    baseProduction: { cyclesPerSecond: 1 },
+    requiresAgents: true,
+    productionPerAgent: { cyclesPerSecond: 0.6 },
     maxLevel: 10,
     color: '#00D9FF',
   },
@@ -15,7 +27,8 @@ export const BUILDING_TYPES = {
     label: 'Incubateur',
     description: 'Production de Biomasse Numérique',
     placementCost: { cycles: 20, biomasse: 5 },
-    baseProduction: { biomassePerSecond: 0.6 },
+    requiresAgents: true,
+    productionPerAgent: { biomassePerSecond: 0.35 },
     maxLevel: 10,
     color: '#39FF14',
   },
@@ -23,25 +36,19 @@ export const BUILDING_TYPES = {
     label: 'Nexus de Fusion',
     description: '+8% de production par niveau pour chaque bâtiment adjacent',
     placementCost: { cycles: 40, biomasse: 25 },
+    requiresAgents: false,
     adjacencyBonusPerLevel: 0.08,
     maxLevel: 10,
     color: '#B026FF',
-  },
-  bouclier: {
-    label: 'Bouclier Adaptatif',
-    description: '-4% de vitesse d\'accumulation de Résistance par niveau (effet global)',
-    placementCost: { cycles: 30, biomasse: 20 },
-    resistanceReductionPerLevel: 0.04,
-    maxLevel: 10,
-    color: '#4DA6FF',
   },
   regulateur: {
     label: 'Régulateur',
     description: 'Convertit un flux de Cycles en Biomasse',
     placementCost: { cycles: 35, biomasse: 10 },
+    requiresAgents: false,
     conversionRatePerLevel: 0.3,
     maxLevel: 10,
-    color: '#FFB627',
+    color: '#4DA6FF',
   },
 };
 
@@ -59,13 +66,13 @@ export function upgradeCost(type, currentLevel) {
   };
 }
 
-// Scaling linéaire simple : la production au niveau L vaut L x la production de base
-export function buildingProductionAtLevel(type, level) {
+// Production PAR AGENT ASSIGNÉ, à un niveau donné (le niveau augmente le rendement de chaque Agent)
+export function productionPerAgentAtLevel(type, level) {
   const def = BUILDING_TYPES[type];
   const prod = {};
-  if (def.baseProduction) {
-    for (const key of Object.keys(def.baseProduction)) {
-      prod[key] = def.baseProduction[key] * level;
+  if (def.productionPerAgent) {
+    for (const key of Object.keys(def.productionPerAgent)) {
+      prod[key] = def.productionPerAgent[key] * level;
     }
   }
   return prod;
@@ -77,4 +84,37 @@ export function visualTier(level) {
   if (level >= 7) return 3;
   if (level >= 4) return 2;
   return 1;
+}
+
+// ============================================
+// Plafond d'Agents par bâtiment (amélioration globale, paliers progressifs)
+// ============================================
+
+export const AGENT_CAP_TIERS = [5, 10, 15, 20, 25, 30];
+
+export const AGENT_CAP_UPGRADE_COSTS = [
+  { cycles: 100, biomasse: 50 },
+  { cycles: 300, biomasse: 150 },
+  { cycles: 800, biomasse: 400 },
+  { cycles: 2000, biomasse: 1000 },
+  { cycles: 5000, biomasse: 2500 },
+];
+
+export function agentCapForTier(tier) {
+  return AGENT_CAP_TIERS[Math.min(tier, AGENT_CAP_TIERS.length - 1)];
+}
+
+export function agentCapUpgradeCost(currentTier) {
+  return AGENT_CAP_UPGRADE_COSTS[currentTier] || null; // null = déjà au palier maximum
+}
+
+// ============================================
+// Recrutement d'Agents
+// ============================================
+
+const RECRUIT_BASE_COST = 15;
+const RECRUIT_COST_GROWTH = 1.22;
+
+export function recruitCost(currentAgentCount) {
+  return Math.ceil(RECRUIT_BASE_COST * Math.pow(RECRUIT_COST_GROWTH, currentAgentCount - 5));
 }

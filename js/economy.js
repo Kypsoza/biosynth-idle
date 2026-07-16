@@ -1,9 +1,16 @@
 // ============================================
-// economy.js — Boucle économique (Phase 1 — grille hexagonale)
+// economy.js — Boucle économique (Phase 2 — Agents & Énergie)
 // ============================================
 
 import { gameState } from './state.js';
-import { BUILDING_TYPES, upgradeCost, buildingProductionAtLevel } from './buildings.js';
+import {
+  BUILDING_TYPES,
+  upgradeCost,
+  productionPerAgentAtLevel,
+  agentCapForTier,
+  agentCapUpgradeCost,
+  recruitCost,
+} from './buildings.js';
 import { tileKey, hexDistance, neighborsOf, MAX_RING, tileCostProfile } from './hexgrid.js';
 
 // --- Définitions des Mutations (achat unique, payées en Biomasse) ---
@@ -12,8 +19,8 @@ export const MUTATION_DEFS = {
     label: 'Amplification Synaptique',
     cost: 20,
   },
-  resistanceDampener: {
-    label: 'Camouflage Adaptatif',
+  metabolismeOptimise: {
+    label: 'Métabolisme Optimisé',
     cost: 40,
   },
   synapseBoost: {
@@ -22,10 +29,8 @@ export const MUTATION_DEFS = {
   },
 };
 
-const BASE_RESISTANCE_DRIFT = 0.15; // gain passif par seconde, même à l'arrêt
-const RESISTANCE_PER_PRODUCTION = 0.05; // gain additionnel proportionnel à l'activité
-const PURGE_RESOURCE_LOSS = 0.5; // pourcentage de ressources perdues lors d'un Scan de Purge
-const PURGE_RESISTANCE_RESET = 20; // valeur de la jauge après une Purge
+const ENERGY_PER_AGENT = 0.4; // consommation d'Énergie par Agent recruté (actif ou non), par seconde
+const ENERGY_SHORTAGE_THROTTLE = 0.7; // ralentissement doux (pas de pénalité brutale) en cas de pénurie
 
 // ============================================
 // Grille : déblocage de cases
@@ -35,9 +40,6 @@ export function unlockCost(q, r) {
   const ring = hexDistance(0, 0, q, r);
   const { cyclesRatio, biomasseRatio } = tileCostProfile(q, r);
   const base = 12 * Math.pow(Math.max(ring, 1), 1.6);
-  // Les cases du premier anneau ne coûtent jamais de Biomasse : au tout début de partie,
-  // aucun Incubateur n'existe encore pour en produire, donc un déblocage 100% Cycles doit
-  // toujours être possible pour éviter un blocage total de la progression.
   const effectiveBiomasseRatio = ring <= 1 ? 0 : biomasseRatio;
   return {
     cycles: Math.ceil(base * cyclesRatio),
@@ -83,7 +85,9 @@ export function placeBuilding(q, r, type) {
   const cost = BUILDING_TYPES[type].placementCost;
   gameState.resources.cycles -= cost.cycles;
   gameState.resources.biomasse -= cost.biomasse;
-  gameState.tiles[tileKey(q, r)].building = { type, level: 1 };
+  const building = { type, level: 1 };
+  if (BUILDING_TYPES[type].requiresAgents) building.assignedAgents = 0;
+  gameState.tiles[tileKey(q, r)].building = building;
   return true;
 }
 
@@ -107,7 +111,89 @@ export function upgradeBuilding(q, r) {
 }
 
 // ============================================
-// Mutations (inchangé depuis la version liste d'achats)
+// Agents : pool, recrutement, assignation
+// ============================================
+
+export function currentAgentCap() {
+  return agentCapForTier(gameState.agentCapTier);
+}
+
+export function totalAssignedAgents() {
+  let sum = 0;
+  for (const tile of Object.values(gameState.tiles)) {
+    if (tile.building?.assignedAgents) sum += tile.building.assignedAgents;
+  }
+  return sum;
+}
+
+export function idleAgents() {
+  return gameState.agents.total - totalAssignedAgents();
+}
+
+export function getRecruitCost() {
+  return recruitCost(gameState.agents.total);
+}
+
+export function canRecruitAgent() {
+  return gameState.resources.energie >= getRecruitCost();
+}
+
+export function recruitAgent() {
+  if (!canRecruitAgent()) return false;
+  gameState.resources.energie -= getRecruitCost();
+  gameState.agents.total += 1;
+  return true;
+}
+
+export function canAssignAgent(q, r) {
+  const tile = gameState.tiles[tileKey(q, r)];
+  if (!tile?.building || !BUILDING_TYPES[tile.building.type]?.requiresAgents) return false;
+  if (idleAgents() <= 0) return false;
+  return tile.building.assignedAgents < currentAgentCap();
+}
+
+export function canUnassignAgent(q, r) {
+  const tile = gameState.tiles[tileKey(q, r)];
+  return !!tile?.building?.assignedAgents && tile.building.assignedAgents > 0;
+}
+
+export function assignAgent(q, r) {
+  if (!canAssignAgent(q, r)) return false;
+  gameState.tiles[tileKey(q, r)].building.assignedAgents += 1;
+  return true;
+}
+
+export function unassignAgent(q, r) {
+  if (!canUnassignAgent(q, r)) return false;
+  gameState.tiles[tileKey(q, r)].building.assignedAgents -= 1;
+  return true;
+}
+
+// ============================================
+// Plafond d'Agents par bâtiment (amélioration globale)
+// ============================================
+
+export function getAgentCapUpgradeCost() {
+  return agentCapUpgradeCost(gameState.agentCapTier);
+}
+
+export function canUpgradeAgentCap() {
+  const cost = getAgentCapUpgradeCost();
+  if (!cost) return false;
+  return gameState.resources.cycles >= cost.cycles && gameState.resources.biomasse >= cost.biomasse;
+}
+
+export function upgradeAgentCap() {
+  if (!canUpgradeAgentCap()) return false;
+  const cost = getAgentCapUpgradeCost();
+  gameState.resources.cycles -= cost.cycles;
+  gameState.resources.biomasse -= cost.biomasse;
+  gameState.agentCapTier += 1;
+  return true;
+}
+
+// ============================================
+// Mutations (achat unique, payées en Biomasse)
 // ============================================
 
 export function canBuyMutation(key) {
@@ -142,30 +228,34 @@ function builtTiles() {
 export function getProductionRates() {
   let cyclesPerSecond = 0;
   let biomassePerSecond = 0;
+  let energiePerSecond = 0;
 
-  // 1. Production de base de chaque bâtiment
+  // 1. Production de base de chaque bâtiment (proportionnelle aux Agents assignés)
   for (const [, tile] of builtTiles()) {
-    const { type, level } = tile.building;
+    const { type, level, assignedAgents } = tile.building;
     const def = BUILDING_TYPES[type];
-    if (!def.baseProduction) continue;
-    const prod = buildingProductionAtLevel(type, level);
-    cyclesPerSecond += prod.cyclesPerSecond || 0;
-    biomassePerSecond += prod.biomassePerSecond || 0;
+    if (!def.productionPerAgent || !assignedAgents) continue;
+    const prod = productionPerAgentAtLevel(type, level);
+    cyclesPerSecond += (prod.cyclesPerSecond || 0) * assignedAgents;
+    biomassePerSecond += (prod.biomassePerSecond || 0) * assignedAgents;
+    energiePerSecond += (prod.energiePerSecond || 0) * assignedAgents;
   }
 
-  // 2. Bonus d'adjacence des Nexus de Fusion (boostent Synapse/Incubateur voisins)
+  // 2. Bonus d'adjacence des Nexus de Fusion (boostent Synapse/Incubateur/Énergie voisins)
   for (const [key, tile] of builtTiles()) {
     if (tile.building.type !== 'nexus') continue;
-    const { q, r } = { q: Number(key.split(',')[0]), r: Number(key.split(',')[1]) };
+    const [q, r] = key.split(',').map(Number);
     const bonusPct = tile.building.level * BUILDING_TYPES.nexus.adjacencyBonusPerLevel;
     for (const [nq, nr] of neighborsOf(q, r)) {
       const neighborTile = gameState.tiles[tileKey(nq, nr)];
-      if (!neighborTile || !neighborTile.building) continue;
+      if (!neighborTile?.building?.assignedAgents) continue;
       const nType = neighborTile.building.type;
-      if (nType !== 'synapse' && nType !== 'incubateur') continue;
-      const nProd = buildingProductionAtLevel(nType, neighborTile.building.level);
-      cyclesPerSecond += (nProd.cyclesPerSecond || 0) * bonusPct;
-      biomassePerSecond += (nProd.biomassePerSecond || 0) * bonusPct;
+      if (!['synapse', 'incubateur', 'energie'].includes(nType)) continue;
+      const nProd = productionPerAgentAtLevel(nType, neighborTile.building.level);
+      const nAgents = neighborTile.building.assignedAgents;
+      cyclesPerSecond += (nProd.cyclesPerSecond || 0) * nAgents * bonusPct;
+      biomassePerSecond += (nProd.biomassePerSecond || 0) * nAgents * bonusPct;
+      energiePerSecond += (nProd.energiePerSecond || 0) * nAgents * bonusPct;
     }
   }
 
@@ -184,48 +274,29 @@ export function getProductionRates() {
   return {
     cyclesPerSecond: cyclesPerSecond * mult,
     biomassePerSecond: biomassePerSecond * mult,
+    energiePerSecond: energiePerSecond * mult,
   };
 }
 
-// Réduction de la Résistance apportée par les Boucliers Adaptatifs placés sur la grille
-function shieldReductionFactor() {
-  let reduction = 0;
-  for (const [, tile] of builtTiles()) {
-    if (tile.building.type === 'bouclier') {
-      reduction += tile.building.level * BUILDING_TYPES.bouclier.resistanceReductionPerLevel;
-    }
-  }
-  return Math.max(0.2, 1 - Math.min(0.8, reduction));
+export function getEnergyConsumption() {
+  const reduction = gameState.mutations.metabolismeOptimise.purchased ? 0.8 : 1;
+  return gameState.agents.total * ENERGY_PER_AGENT * reduction;
 }
 
 // ============================================
 // Tick principal
 // ============================================
 
-// Retourne true si un Scan de Purge vient de se déclencher (pour déclencher un feedback UI)
 export function tick(deltaSeconds) {
-  const { cyclesPerSecond, biomassePerSecond } = getProductionRates();
+  const { cyclesPerSecond, biomassePerSecond, energiePerSecond } = getProductionRates();
+  const consumption = getEnergyConsumption();
 
-  gameState.resources.cycles += cyclesPerSecond * deltaSeconds;
-  gameState.resources.biomasse += biomassePerSecond * deltaSeconds;
+  // Ralentissement doux (pas de malus brutal) si l'Énergie est à sec
+  const throttle = gameState.resources.energie <= 0 ? ENERGY_SHORTAGE_THROTTLE : 1;
 
-  const dampener = gameState.mutations.resistanceDampener.purchased ? 0.7 : 1;
-  const shieldFactor = shieldReductionFactor();
-  const productionActivity = cyclesPerSecond + biomassePerSecond * 2;
-  const resistanceGain =
-    (BASE_RESISTANCE_DRIFT + productionActivity * RESISTANCE_PER_PRODUCTION) * dampener * shieldFactor * deltaSeconds;
+  gameState.resources.cycles += cyclesPerSecond * throttle * deltaSeconds;
+  gameState.resources.biomasse += biomassePerSecond * throttle * deltaSeconds;
 
-  gameState.resistance = Math.min(100, gameState.resistance + resistanceGain);
-
-  if (gameState.resistance >= 100) {
-    triggerPurge();
-    return true;
-  }
-  return false;
-}
-
-function triggerPurge() {
-  gameState.resources.cycles *= 1 - PURGE_RESOURCE_LOSS;
-  gameState.resources.biomasse *= 1 - PURGE_RESOURCE_LOSS;
-  gameState.resistance = PURGE_RESISTANCE_RESET;
+  const netEnergie = energiePerSecond * throttle - consumption;
+  gameState.resources.energie = Math.max(0, gameState.resources.energie + netEnergie * deltaSeconds);
 }

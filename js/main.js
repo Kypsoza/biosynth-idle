@@ -4,7 +4,7 @@
 
 import { gameState } from './state.js';
 import { saveGame, loadGame, exportSave, importSave, hardReset, startAutosave } from './save.js';
-import { renderGrid, renderTileInfoPanel, updateTileInfoAffordability, renderStats, flashSaveStatus, showPurgeAlert } from './ui.js';
+import { renderGrid, renderTileInfoPanel, updateTileInfoAffordability, renderStats, flashSaveStatus } from './ui.js';
 import {
   MUTATION_DEFS,
   buyMutation,
@@ -13,6 +13,10 @@ import {
   unlockTile,
   placeBuilding,
   upgradeBuilding,
+  assignAgent,
+  unassignAgent,
+  recruitAgent,
+  upgradeAgentCap,
 } from './economy.js';
 import { tileKey } from './hexgrid.js';
 
@@ -50,10 +54,9 @@ function refreshAfterAction() {
 function startGameLoop() {
   const deltaSeconds = TICK_INTERVAL_MS / 1000;
   setInterval(() => {
-    const purged = tick(deltaSeconds);
+    tick(deltaSeconds);
     renderStats();
     updateTileInfoAffordability(); // met juste à jour disabled=..., ne touche pas au DOM des boutons
-    if (purged) showPurgeAlert();
   }, TICK_INTERVAL_MS);
 }
 
@@ -91,9 +94,40 @@ function wireEvents() {
       success = placeBuilding(q, r, btn.dataset.type);
     } else if (action === 'upgrade') {
       success = upgradeBuilding(q, r);
+    } else if (action === 'assign-agent') {
+      success = assignAgent(q, r);
+    } else if (action === 'unassign-agent') {
+      success = unassignAgent(q, r);
     }
 
-    if (success) refreshAfterAction();
+    if (success) {
+      // Assignation d'Agents : pas besoin de reconstruire toute la grille, juste le panneau + stats
+      if (action === 'assign-agent' || action === 'unassign-agent') {
+        renderTileInfoPanel(selectedTile);
+        renderStats();
+        renderGrid(selectedKey()); // met à jour le badge d'Agents affiché sur la case
+      } else {
+        refreshAfterAction();
+      }
+    }
+  });
+
+  // Recrutement d'Agents
+  document.getElementById('recruit-btn').addEventListener('click', () => {
+    if (recruitAgent()) {
+      renderStats();
+      renderTileInfoPanel(selectedTile);
+      flashSaveStatus('Nouvel Agent recruté');
+    }
+  });
+
+  // Amélioration du plafond d'Agents par bâtiment
+  document.getElementById('upgrade-cap-btn').addEventListener('click', () => {
+    if (upgradeAgentCap()) {
+      renderStats();
+      renderTileInfoPanel(selectedTile);
+      flashSaveStatus('Plafond d\'Agents amélioré');
+    }
   });
 
   // Achat des Mutations
@@ -137,7 +171,6 @@ function wireEvents() {
     flashSaveStatus('Progression réinitialisée');
   });
 
-  // Sauvegarde à la fermeture/changement d'onglet
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveGame();
   });
