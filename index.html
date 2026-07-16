@@ -39,12 +39,18 @@
 
   <main class="game-layout">
 
-    <!-- Carte hexagonale : le Noyau au centre + les cases à débloquer/construire -->
+    <!-- Carte hexagonale : le Noyau au centre + les emplacements fixes de bâtiments -->
     <section class="map-zone">
-      <p class="map-hint">Cliquez sur une case pour la débloquer, y construire un bâtiment, ou l'améliorer.</p>
+      <p class="map-hint">Construisez vos bâtiments depuis le menu ci-dessous. Cliquez sur le Noyau pour générer des Cycles.</p>
       <div class="map-scroll">
         <svg id="hex-grid" class="hex-grid-svg" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
+    </section>
+
+    <!-- Menu de construction : tous les bâtiments disponibles, verrouillés selon les prérequis -->
+    <section class="build-menu-zone">
+      <h2 class="panel-title">Construction</h2>
+      <div id="build-menu"></div>
     </section>
 
     <!-- Panneau Agents : recrutement + plafond par bâtiment (les effectifs sont dans le HUD) -->

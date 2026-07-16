@@ -1,14 +1,17 @@
 // ============================================
 // buildings.js — Définitions des bâtiments de la grille
 // ============================================
+// Chaque bâtiment a un emplacement FIXE prédéfini sur la carte (coordonnées axiales)
+// et peut nécessiter un autre bâtiment construit au préalable (prerequisite).
 
-// Bâtiments producteurs : nécessitent des Agents assignés pour produire
-// (production = productionPerAgent x niveau x Agents assignés)
 export const BUILDING_TYPES = {
   energie: {
     label: 'Générateur d\'Énergie',
     description: 'Produit de l\'Énergie, consommée en continu par vos Agents',
     placementCost: { cycles: 12, biomasse: 0 },
+    constructionTime: 6,
+    prerequisite: null,
+    slot: { q: 2, r: 0 },
     requiresAgents: true,
     productionPerAgent: { energiePerSecond: 0.8 },
     maxLevel: 10,
@@ -18,6 +21,9 @@ export const BUILDING_TYPES = {
     label: 'Synapse',
     description: 'Production de Cycles de Calcul',
     placementCost: { cycles: 15, biomasse: 0 },
+    constructionTime: 5,
+    prerequisite: null,
+    slot: { q: 2, r: -2 },
     requiresAgents: true,
     productionPerAgent: { cyclesPerSecond: 0.6 },
     maxLevel: 10,
@@ -27,6 +33,9 @@ export const BUILDING_TYPES = {
     label: 'Incubateur',
     description: 'Production de Biomasse Numérique',
     placementCost: { cycles: 20, biomasse: 5 },
+    constructionTime: 8,
+    prerequisite: 'synapse',
+    slot: { q: 0, r: -2 },
     requiresAgents: true,
     productionPerAgent: { biomassePerSecond: 0.35 },
     maxLevel: 10,
@@ -36,6 +45,9 @@ export const BUILDING_TYPES = {
     label: 'Nexus de Fusion',
     description: '+8% de production par niveau pour chaque bâtiment adjacent',
     placementCost: { cycles: 40, biomasse: 25 },
+    constructionTime: 15,
+    prerequisite: 'incubateur',
+    slot: { q: -2, r: 0 },
     requiresAgents: false,
     adjacencyBonusPerLevel: 0.08,
     maxLevel: 10,
@@ -45,12 +57,23 @@ export const BUILDING_TYPES = {
     label: 'Régulateur',
     description: 'Convertit un flux de Cycles en Biomasse',
     placementCost: { cycles: 35, biomasse: 10 },
+    constructionTime: 12,
+    prerequisite: 'incubateur',
+    slot: { q: -2, r: 2 },
     requiresAgents: false,
     conversionRatePerLevel: 0.3,
     maxLevel: 10,
     color: '#4DA6FF',
   },
 };
+
+// Emplacement réservé pour un futur bâtiment (Défense/Exploration, Phases 3-4)
+export const RESERVED_SLOT = { q: 0, r: 2 };
+
+// Index inverse "q,r" -> type de bâtiment, construit une seule fois
+export const SLOT_INDEX = Object.fromEntries(
+  Object.entries(BUILDING_TYPES).map(([type, def]) => [`${def.slot.q},${def.slot.r}`, type])
+);
 
 // Le Noyau n'est pas un bâtiment "constructible" : il est fixe, unique, toujours au centre
 export const NOYAU_COLOR = '#39FF14';
@@ -105,7 +128,7 @@ export function agentCapForTier(tier) {
 }
 
 export function agentCapUpgradeCost(currentTier) {
-  return AGENT_CAP_UPGRADE_COSTS[currentTier] || null; // null = déjà au palier maximum
+  return AGENT_CAP_UPGRADE_COSTS[currentTier] || null;
 }
 
 // ============================================

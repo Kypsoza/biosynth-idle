@@ -4,8 +4,8 @@
 // Coordonnées axiales (q, r), hexagones "pointy-top"
 // Référence : https://www.redblobgames.com/grids/hexagons/
 
-export const MAX_RING = 4; // Rayon maximal de la carte (soft cap, extensible en Phase future)
-export const HEX_SIZE = 34; // Rayon d'un hexagone en pixels (centre → coin)
+export const MAX_RING = 2; // Rayon de la carte (décorative au-delà des emplacements de bâtiments)
+export const HEX_SIZE = 46; // Rayon d'un hexagone en pixels (centre → coin) — agrandi pour la vue d'ensemble
 
 export function tileKey(q, r) {
   return `${q},${r}`;
@@ -55,12 +55,4 @@ export function allTilesInRadius(radius) {
     }
   }
   return tiles;
-}
-
-// Hash déterministe pour varier le profil de coût des cases (mélange Cycles/Biomasse selon la case)
-export function tileCostProfile(q, r) {
-  const h = Math.abs((q * 31 + r * 17) % 3);
-  if (h === 0) return { cyclesRatio: 1.5, biomasseRatio: 0.5 };
-  if (h === 1) return { cyclesRatio: 0.5, biomasseRatio: 1.5 };
-  return { cyclesRatio: 1, biomasseRatio: 1 };
 }

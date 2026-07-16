@@ -4,21 +4,30 @@
 
 import { gameState } from './state.js';
 import { saveGame, loadGame, exportSave, importSave, hardReset, startAutosave } from './save.js';
-import { renderGrid, renderTileInfoPanel, updateTileInfoAffordability, renderStats, flashSaveStatus } from './ui.js';
+import {
+  renderGrid,
+  renderTileInfoPanel,
+  updateTileInfoAffordability,
+  renderStats,
+  renderBuildMenu,
+  updateBuildMenuAffordability,
+  updateConstructionProgress,
+  flashSaveStatus,
+} from './ui.js';
 import {
   MUTATION_DEFS,
   buyMutation,
   handleCoreClick,
   tick,
-  unlockTile,
-  placeBuilding,
-  upgradeBuilding,
   assignAgent,
   unassignAgent,
   recruitAgent,
   upgradeAgentCap,
+  upgradeBuilding,
+  buyBuilding,
 } from './economy.js';
 import { tileKey } from './hexgrid.js';
+import { BUILDING_TYPES } from './buildings.js';
 
 const TICK_INTERVAL_MS = 100; // 10 ticks/seconde pour une production fluide
 
@@ -30,9 +39,10 @@ function init() {
     console.info('Aucune sauvegarde trouvée, nouvelle partie.');
   }
 
-  wireEvents(); // toujours attaché en premier : la grille reste cliquable même si un rendu échoue
+  wireEvents(); // toujours attaché en premier : la carte reste cliquable même si un rendu échoue
   renderGrid(null);
   renderTileInfoPanel(null);
+  renderBuildMenu();
   renderStats();
   startGameLoop();
   startAutosave((ok) => {
@@ -45,24 +55,49 @@ function selectedKey() {
   return selectedTile ? tileKey(selectedTile.q, selectedTile.r) : null;
 }
 
-function refreshAfterAction() {
+function refreshStructural() {
   renderGrid(selectedKey());
   renderTileInfoPanel(selectedTile);
+  renderBuildMenu();
   renderStats();
 }
 
 function startGameLoop() {
   const deltaSeconds = TICK_INTERVAL_MS / 1000;
   setInterval(() => {
-    tick(deltaSeconds);
+    const justCompleted = tick(deltaSeconds);
     renderStats();
-    updateTileInfoAffordability(); // met juste à jour disabled=..., ne touche pas au DOM des boutons
+    updateConstructionProgress(); // met juste à jour la largeur des barres, sans reconstruire le DOM
+    updateTileInfoAffordability();
+    updateBuildMenuAffordability();
+    if (justCompleted.length > 0) {
+      // Une construction vient de se terminer : un rendu structurel complet est nécessaire
+      // (nouvelle icône, contrôles d'Agents, et le menu peut débloquer de nouveaux prérequis)
+      refreshStructural();
+      justCompleted.forEach((type) => flashSaveStatus(`${BUILDING_TYPES[type].label} construit !`));
+    }
   }, TICK_INTERVAL_MS);
 }
 
 function wireEvents() {
-  // Clic sur une case de la grille hexagonale
+  // Clics sur la grille : actions inline (Agents) en priorité, sinon sélection de case
   document.getElementById('hex-grid').addEventListener('click', (event) => {
+    const actionEl = event.target.closest('[data-action]');
+    if (actionEl) {
+      const q = Number(actionEl.dataset.q);
+      const r = Number(actionEl.dataset.r);
+      const action = actionEl.dataset.action;
+      let success = false;
+      if (action === 'assign-agent') success = assignAgent(q, r);
+      else if (action === 'unassign-agent') success = unassignAgent(q, r);
+      if (success) {
+        renderGrid(selectedKey());
+        renderTileInfoPanel(selectedTile);
+        renderStats();
+      }
+      return;
+    }
+
     const tileEl = event.target.closest('[data-q]');
     if (!tileEl) return;
 
@@ -70,74 +105,56 @@ function wireEvents() {
     const r = Number(tileEl.dataset.r);
     selectedTile = { q, r };
 
-    // Le Noyau reste cliquable pour générer des Cycles, en plus de la sélection
     if (q === 0 && r === 0) {
       handleCoreClick();
     }
 
-    refreshAfterAction();
+    renderGrid(selectedKey());
+    renderTileInfoPanel(selectedTile);
+    renderStats();
   });
 
-  // Actions du panneau d'info de case (délégation d'événements car le contenu est régénéré)
+  // Amélioration de niveau (panneau latéral)
   document.getElementById('tile-info-panel').addEventListener('click', (event) => {
-    const btn = event.target.closest('[data-action]');
+    const btn = event.target.closest('[data-action="upgrade"]');
     if (!btn || btn.disabled) return;
-
     const q = Number(btn.dataset.q);
     const r = Number(btn.dataset.r);
-    const action = btn.dataset.action;
+    if (upgradeBuilding(q, r)) refreshStructural();
+  });
 
-    let success = false;
-    if (action === 'unlock') {
-      success = unlockTile(q, r);
-    } else if (action === 'build') {
-      success = placeBuilding(q, r, btn.dataset.type);
-    } else if (action === 'upgrade') {
-      success = upgradeBuilding(q, r);
-    } else if (action === 'assign-agent') {
-      success = assignAgent(q, r);
-    } else if (action === 'unassign-agent') {
-      success = unassignAgent(q, r);
-    }
-
-    if (success) {
-      // Assignation d'Agents : pas besoin de reconstruire toute la grille, juste le panneau + stats
-      if (action === 'assign-agent' || action === 'unassign-agent') {
-        renderTileInfoPanel(selectedTile);
-        renderStats();
-        renderGrid(selectedKey()); // met à jour le badge d'Agents affiché sur la case
-      } else {
-        refreshAfterAction();
-      }
+  // Achat de bâtiments depuis le menu de construction
+  document.getElementById('build-menu').addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-action="buy-building"]');
+    if (!btn || btn.disabled) return;
+    if (buyBuilding(btn.dataset.type)) {
+      refreshStructural();
+      flashSaveStatus(`Construction de ${BUILDING_TYPES[btn.dataset.type].label} lancée`);
     }
   });
 
-  // Recrutement d'Agents
   document.getElementById('recruit-btn').addEventListener('click', () => {
     if (recruitAgent()) {
+      renderGrid(selectedKey());
       renderStats();
-      renderTileInfoPanel(selectedTile);
       flashSaveStatus('Nouvel Agent recruté');
     }
   });
 
-  // Amélioration du plafond d'Agents par bâtiment
   document.getElementById('upgrade-cap-btn').addEventListener('click', () => {
     if (upgradeAgentCap()) {
+      renderGrid(selectedKey());
       renderStats();
-      renderTileInfoPanel(selectedTile);
       flashSaveStatus('Plafond d\'Agents amélioré');
     }
   });
 
-  // Achat des Mutations
   for (const key of Object.keys(MUTATION_DEFS)) {
     const btn = document.getElementById(`buy-${key}`);
     if (!btn) continue;
     btn.addEventListener('click', () => {
       if (buyMutation(key)) {
         renderStats();
-        renderTileInfoPanel(selectedTile);
         flashSaveStatus(`Mutation acquise : ${MUTATION_DEFS[key].label}`);
       }
     });
@@ -155,7 +172,7 @@ function wireEvents() {
     const ok = importSave(input);
     if (ok) {
       selectedTile = null;
-      refreshAfterAction();
+      refreshStructural();
       flashSaveStatus('Import réussi');
     } else {
       flashSaveStatus('Code de sauvegarde invalide');
@@ -167,7 +184,7 @@ function wireEvents() {
     if (!confirmed) return;
     hardReset();
     selectedTile = null;
-    refreshAfterAction();
+    refreshStructural();
     flashSaveStatus('Progression réinitialisée');
   });
 

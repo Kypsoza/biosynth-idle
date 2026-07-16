@@ -1,10 +1,21 @@
 // ============================================
 // state.js — Structure de données du jeu
 // ============================================
-// Phase 0 : squelette de state, sans logique de production
-// (Synapses/Mutations/Résistance arrivent en Phase 1+)
 
-export const SAVE_VERSION = 4;
+import { BUILDING_TYPES } from './buildings.js';
+
+export const SAVE_VERSION = 5;
+
+function createInitialTiles() {
+  const tiles = {
+    '0,0': { unlocked: true, building: { type: 'noyau', level: 1 } },
+  };
+  for (const def of Object.values(BUILDING_TYPES)) {
+    const key = `${def.slot.q},${def.slot.r}`;
+    tiles[key] = { unlocked: true, building: null }; // emplacement existant, pas encore construit
+  }
+  return tiles;
+}
 
 export function createDefaultState() {
   return {
@@ -32,17 +43,16 @@ export function createDefaultState() {
     // Palier de plafond d'Agents par bâtiment (0 = 5 max, 1 = 10 max, etc.)
     agentCapTier: 0,
 
-    // Grille hexagonale : clé "q,r" -> { unlocked, building: {type, level, assignedAgents} | null }
-    // Le Noyau occupe toujours la case d'origine (0,0), fixe et indestructible
-    tiles: {
-      '0,0': { unlocked: true, building: { type: 'noyau', level: 1 } },
-    },
+    // Grille hexagonale : clé "q,r" -> { unlocked, building: {...} | null }
+    // Le Noyau + les emplacements fixes de bâtiments (cf. buildings.js) ; le reste de la
+    // carte est purement décoratif (pas de stockage nécessaire pour les cases inactives)
+    tiles: createInitialTiles(),
 
     // Mutations : améliorations achetées avec la Biomasse (Phase 1)
     // Ne pas confondre avec l'arbre de mutation PERMANENT du Transfert de Noyau (Phase 2)
     mutations: {
       clickPower: { purchased: false },
-      resistanceDampener: { purchased: false },
+      metabolismeOptimise: { purchased: false },
       synapseBoost: { purchased: false },
     },
 

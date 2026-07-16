@@ -1,5 +1,5 @@
 // ============================================
-// economy.js — Boucle économique (Phase 2 — Agents & Énergie)
+// economy.js — Boucle économique (Phase 2bis — emplacements fixes & construction chronométrée)
 // ============================================
 
 import { gameState } from './state.js';
@@ -11,7 +11,7 @@ import {
   agentCapUpgradeCost,
   recruitCost,
 } from './buildings.js';
-import { tileKey, hexDistance, neighborsOf, MAX_RING, tileCostProfile } from './hexgrid.js';
+import { tileKey, neighborsOf } from './hexgrid.js';
 
 // --- Définitions des Mutations (achat unique, payées en Biomasse) ---
 export const MUTATION_DEFS = {
@@ -29,71 +29,80 @@ export const MUTATION_DEFS = {
   },
 };
 
-const ENERGY_PER_AGENT = 0.4; // consommation d'Énergie par Agent recruté (actif ou non), par seconde
-const ENERGY_SHORTAGE_THROTTLE = 0.7; // ralentissement doux (pas de pénalité brutale) en cas de pénurie
+const ENERGY_PER_AGENT = 0.4;
+const ENERGY_SHORTAGE_THROTTLE = 0.7;
 
 // ============================================
-// Grille : déblocage de cases
+// Prérequis et construction des bâtiments (emplacements fixes)
 // ============================================
 
-export function unlockCost(q, r) {
-  const ring = hexDistance(0, 0, q, r);
-  const { cyclesRatio, biomasseRatio } = tileCostProfile(q, r);
-  const base = 12 * Math.pow(Math.max(ring, 1), 1.6);
-  const effectiveBiomasseRatio = ring <= 1 ? 0 : biomasseRatio;
-  return {
-    cycles: Math.ceil(base * cyclesRatio),
-    biomasse: Math.ceil(base * effectiveBiomasseRatio * 0.6),
+function slotKey(type) {
+  const { q, r } = BUILDING_TYPES[type].slot;
+  return tileKey(q, r);
+}
+
+export function isBuilt(type) {
+  const tile = gameState.tiles[slotKey(type)];
+  return !!tile?.building && !tile.building.constructing;
+}
+
+export function isConstructing(type) {
+  const tile = gameState.tiles[slotKey(type)];
+  return !!tile?.building?.constructing;
+}
+
+export function prerequisiteMet(type) {
+  const prereq = BUILDING_TYPES[type].prerequisite;
+  return !prereq || isBuilt(prereq);
+}
+
+export function canBuyBuilding(type) {
+  const tile = gameState.tiles[slotKey(type)];
+  if (tile?.building) return false; // déjà construit ou en construction
+  if (!prerequisiteMet(type)) return false;
+  const cost = BUILDING_TYPES[type].placementCost;
+  return gameState.resources.cycles >= cost.cycles && gameState.resources.biomasse >= cost.biomasse;
+}
+
+export function buyBuilding(type) {
+  if (!canBuyBuilding(type)) return false;
+  const def = BUILDING_TYPES[type];
+  gameState.resources.cycles -= def.placementCost.cycles;
+  gameState.resources.biomasse -= def.placementCost.biomasse;
+  gameState.tiles[slotKey(type)].building = {
+    type,
+    level: 0,
+    constructing: true,
+    remainingTime: def.constructionTime,
+    totalTime: def.constructionTime,
+    ...(def.requiresAgents ? { assignedAgents: 0 } : {}),
   };
-}
-
-export function isTileUnlockable(q, r) {
-  const key = tileKey(q, r);
-  if (gameState.tiles[key]?.unlocked) return false;
-  if (hexDistance(0, 0, q, r) > MAX_RING) return false;
-  return neighborsOf(q, r).some(([nq, nr]) => gameState.tiles[tileKey(nq, nr)]?.unlocked);
-}
-
-export function canUnlockTile(q, r) {
-  if (!isTileUnlockable(q, r)) return false;
-  const cost = unlockCost(q, r);
-  return gameState.resources.cycles >= cost.cycles && gameState.resources.biomasse >= cost.biomasse;
-}
-
-export function unlockTile(q, r) {
-  if (!canUnlockTile(q, r)) return false;
-  const cost = unlockCost(q, r);
-  gameState.resources.cycles -= cost.cycles;
-  gameState.resources.biomasse -= cost.biomasse;
-  gameState.tiles[tileKey(q, r)] = { unlocked: true, building: null };
   return true;
 }
 
-// ============================================
-// Grille : construction et amélioration de bâtiments
-// ============================================
-
-export function canPlaceBuilding(q, r, type) {
-  const tile = gameState.tiles[tileKey(q, r)];
-  if (!tile || !tile.unlocked || tile.building) return false;
-  const cost = BUILDING_TYPES[type].placementCost;
-  return gameState.resources.cycles >= cost.cycles && gameState.resources.biomasse >= cost.biomasse;
+// Fait avancer toutes les constructions en cours ; retourne la liste des types venant de se terminer
+function tickConstructions(deltaSeconds) {
+  const justCompleted = [];
+  for (const tile of Object.values(gameState.tiles)) {
+    if (!tile.building?.constructing) continue;
+    tile.building.remainingTime -= deltaSeconds;
+    if (tile.building.remainingTime <= 0) {
+      tile.building.constructing = false;
+      tile.building.remainingTime = 0;
+      tile.building.level = 1;
+      justCompleted.push(tile.building.type);
+    }
+  }
+  return justCompleted;
 }
 
-export function placeBuilding(q, r, type) {
-  if (!canPlaceBuilding(q, r, type)) return false;
-  const cost = BUILDING_TYPES[type].placementCost;
-  gameState.resources.cycles -= cost.cycles;
-  gameState.resources.biomasse -= cost.biomasse;
-  const building = { type, level: 1 };
-  if (BUILDING_TYPES[type].requiresAgents) building.assignedAgents = 0;
-  gameState.tiles[tileKey(q, r)].building = building;
-  return true;
-}
+// ============================================
+// Amélioration de niveau
+// ============================================
 
 export function canUpgradeBuilding(q, r) {
   const tile = gameState.tiles[tileKey(q, r)];
-  if (!tile || !tile.building || tile.building.type === 'noyau') return false;
+  if (!tile?.building || tile.building.type === 'noyau' || tile.building.constructing) return false;
   const def = BUILDING_TYPES[tile.building.type];
   if (tile.building.level >= def.maxLevel) return false;
   const cost = upgradeCost(tile.building.type, tile.building.level);
@@ -147,7 +156,8 @@ export function recruitAgent() {
 
 export function canAssignAgent(q, r) {
   const tile = gameState.tiles[tileKey(q, r)];
-  if (!tile?.building || !BUILDING_TYPES[tile.building.type]?.requiresAgents) return false;
+  if (!tile?.building || tile.building.constructing) return false;
+  if (!BUILDING_TYPES[tile.building.type]?.requiresAgents) return false;
   if (idleAgents() <= 0) return false;
   return tile.building.assignedAgents < currentAgentCap();
 }
@@ -222,7 +232,9 @@ export function handleCoreClick() {
 // ============================================
 
 function builtTiles() {
-  return Object.entries(gameState.tiles).filter(([, t]) => t.building && t.building.type !== 'noyau');
+  return Object.entries(gameState.tiles).filter(
+    ([, t]) => t.building && t.building.type !== 'noyau' && !t.building.constructing
+  );
 }
 
 export function getProductionRates() {
@@ -230,7 +242,6 @@ export function getProductionRates() {
   let biomassePerSecond = 0;
   let energiePerSecond = 0;
 
-  // 1. Production de base de chaque bâtiment (proportionnelle aux Agents assignés)
   for (const [, tile] of builtTiles()) {
     const { type, level, assignedAgents } = tile.building;
     const def = BUILDING_TYPES[type];
@@ -241,14 +252,13 @@ export function getProductionRates() {
     energiePerSecond += (prod.energiePerSecond || 0) * assignedAgents;
   }
 
-  // 2. Bonus d'adjacence des Nexus de Fusion (boostent Synapse/Incubateur/Énergie voisins)
   for (const [key, tile] of builtTiles()) {
     if (tile.building.type !== 'nexus') continue;
     const [q, r] = key.split(',').map(Number);
     const bonusPct = tile.building.level * BUILDING_TYPES.nexus.adjacencyBonusPerLevel;
     for (const [nq, nr] of neighborsOf(q, r)) {
       const neighborTile = gameState.tiles[tileKey(nq, nr)];
-      if (!neighborTile?.building?.assignedAgents) continue;
+      if (!neighborTile?.building?.assignedAgents || neighborTile.building.constructing) continue;
       const nType = neighborTile.building.type;
       if (!['synapse', 'incubateur', 'energie'].includes(nType)) continue;
       const nProd = productionPerAgentAtLevel(nType, neighborTile.building.level);
@@ -259,7 +269,6 @@ export function getProductionRates() {
     }
   }
 
-  // 3. Conversion du Régulateur (une partie des Cycles devient de la Biomasse)
   for (const [, tile] of builtTiles()) {
     if (tile.building.type !== 'regulateur') continue;
     const rate = tile.building.level * BUILDING_TYPES.regulateur.conversionRatePerLevel;
@@ -268,7 +277,6 @@ export function getProductionRates() {
     biomassePerSecond += converted * 0.6;
   }
 
-  // 4. Multiplicateur global de la mutation Prolifération Cellulaire
   const mult = gameState.mutations.synapseBoost?.purchased ? 1.2 : 1;
 
   return {
@@ -287,11 +295,12 @@ export function getEnergyConsumption() {
 // Tick principal
 // ============================================
 
+// Retourne la liste des types de bâtiments dont la construction vient de se terminer (pour le rendu)
 export function tick(deltaSeconds) {
+  const justCompleted = tickConstructions(deltaSeconds);
+
   const { cyclesPerSecond, biomassePerSecond, energiePerSecond } = getProductionRates();
   const consumption = getEnergyConsumption();
-
-  // Ralentissement doux (pas de malus brutal) si l'Énergie est à sec
   const throttle = gameState.resources.energie <= 0 ? ENERGY_SHORTAGE_THROTTLE : 1;
 
   gameState.resources.cycles += cyclesPerSecond * throttle * deltaSeconds;
@@ -299,4 +308,6 @@ export function tick(deltaSeconds) {
 
   const netEnergie = energiePerSecond * throttle - consumption;
   gameState.resources.energie = Math.max(0, gameState.resources.energie + netEnergie * deltaSeconds);
+
+  return justCompleted;
 }
