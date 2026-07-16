@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BioSynth Idle</title>
+  <meta name="description" content="Un incrémental bio-numérique — éveillez une IA à travers les strates d'un système biotech.">
+  <meta name="theme-color" content="#14141F">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- HUD supérieur : identité de la Strate + jauge de Résistance -->
+  <header class="hud">
+    <div class="hud-strate">
+      <span class="hud-label">Strate</span>
+      <span class="hud-value" id="strate-name">01 — Éveil</span>
+    </div>
+
+    <div class="hud-production">
+      <span class="hud-label">Production</span>
+      <span class="hud-value" id="core-production">+0 Cycles/s · +0 Biomasse/s</span>
+    </div>
+
+    <div class="hud-resistance">
+      <span class="hud-label">Résistance</span>
+      <div class="resistance-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="resistance-bar">
+        <div class="resistance-fill" id="resistance-fill" style="width: 0%;"></div>
+      </div>
+      <span class="hud-value" id="resistance-value">0%</span>
+    </div>
+  </header>
+
+  <div class="purge-alert" id="purge-alert" role="alert" hidden>
+    ⚠ Scan de Purge détecté — ressources compromises
+  </div>
+
+  <main class="game-layout">
+
+    <!-- Carte hexagonale : le Noyau au centre + les cases à débloquer/construire -->
+    <section class="map-zone">
+      <p class="map-hint">Cliquez sur une case pour la débloquer, y construire un bâtiment, ou l'améliorer.</p>
+      <div class="map-scroll">
+        <svg id="hex-grid" class="hex-grid-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </section>
+
+    <!-- Panneau ressources -->
+    <aside class="resources-panel" id="resources-panel">
+      <h2 class="panel-title">Ressources</h2>
+      <ul class="resource-list">
+        <li class="resource-row">
+          <span class="resource-icon resource-icon--cycles" aria-hidden="true"></span>
+          <span class="resource-name">Cycles de Calcul</span>
+          <span class="resource-amount" id="res-cycles">0</span>
+        </li>
+        <li class="resource-row">
+          <span class="resource-icon resource-icon--biomasse" aria-hidden="true"></span>
+          <span class="resource-name">Biomasse Numérique</span>
+          <span class="resource-amount" id="res-biomasse">0</span>
+        </li>
+        <li class="resource-row">
+          <span class="resource-icon resource-icon--adn" aria-hidden="true"></span>
+          <span class="resource-name">Brins d'ADN</span>
+          <span class="resource-amount" id="res-adn">0</span>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Panneau d'info de la case sélectionnée (contenu généré dynamiquement en JS) -->
+    <aside class="tile-info-panel" id="tile-info-panel">
+      <h2 class="panel-title">Case sélectionnée</h2>
+      <p class="tile-info-empty">Cliquez sur une case de la carte pour voir ses détails.</p>
+    </aside>
+
+    <!-- Panneau Mutations (achat unique avec Biomasse) -->
+    <section class="shop-panel" id="mutations-panel">
+      <h2 class="panel-title">Mutations</h2>
+      <ul class="shop-list">
+        <li class="shop-item" data-item="clickPower">
+          <div class="shop-item-info">
+            <span class="shop-item-name">Amplification Synaptique</span>
+            <span class="shop-item-desc">+1 Cycle par clic sur le Noyau</span>
+          </div>
+          <button class="shop-item-buy" id="buy-clickPower">
+            <span class="shop-item-cost" id="cost-clickPower">20</span>
+          </button>
+        </li>
+        <li class="shop-item" data-item="resistanceDampener">
+          <div class="shop-item-info">
+            <span class="shop-item-name">Camouflage Adaptatif</span>
+            <span class="shop-item-desc">-30% de vitesse d'accumulation de Résistance</span>
+          </div>
+          <button class="shop-item-buy" id="buy-resistanceDampener">
+            <span class="shop-item-cost" id="cost-resistanceDampener">40</span>
+          </button>
+        </li>
+        <li class="shop-item" data-item="synapseBoost">
+          <div class="shop-item-info">
+            <span class="shop-item-name">Prolifération Cellulaire</span>
+            <span class="shop-item-desc">+20% de production sur toute la grille</span>
+          </div>
+          <button class="shop-item-buy" id="buy-synapseBoost">
+            <span class="shop-item-cost" id="cost-synapseBoost">80</span>
+          </button>
+        </li>
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- Contrôles de sauvegarde -->
+  <footer class="save-controls">
+    <span class="save-status" id="save-status">Sauvegarde automatique active</span>
+    <div class="save-buttons">
+      <button class="save-btn" id="export-btn">Exporter</button>
+      <button class="save-btn" id="import-btn">Importer</button>
+      <button class="save-btn save-btn--danger" id="reset-btn">Réinitialiser</button>
+    </div>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
