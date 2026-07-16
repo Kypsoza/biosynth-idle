@@ -4,7 +4,7 @@
 
 import { gameState } from './state.js';
 import { saveGame, loadGame, exportSave, importSave, hardReset, startAutosave } from './save.js';
-import { renderGrid, renderTileInfoPanel, renderStats, flashSaveStatus, showPurgeAlert } from './ui.js';
+import { renderGrid, renderTileInfoPanel, updateTileInfoAffordability, renderStats, flashSaveStatus, showPurgeAlert } from './ui.js';
 import {
   MUTATION_DEFS,
   buyMutation,
@@ -52,7 +52,7 @@ function startGameLoop() {
   setInterval(() => {
     const purged = tick(deltaSeconds);
     renderStats();
-    renderTileInfoPanel(selectedTile); // garde les coûts/affordabilité à jour dans le panneau
+    updateTileInfoAffordability(); // met juste à jour disabled=..., ne touche pas au DOM des boutons
     if (purged) showPurgeAlert();
   }, TICK_INTERVAL_MS);
 }

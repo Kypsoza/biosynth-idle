@@ -80,6 +80,12 @@ export function renderGrid(selectedKey) {
 
     let inner = '';
 
+    if (state === 'frontier') {
+      inner += `<text class="hex-tile-glyph hex-tile-glyph--lock" x="${x}" y="${y + 6}" text-anchor="middle">🔒</text>`;
+    } else if (state === 'empty') {
+      inner += `<text class="hex-tile-glyph hex-tile-glyph--build" x="${x}" y="${y + 7}" text-anchor="middle">+</text>`;
+    }
+
     if (state === 'built') {
       const { type, level } = tile.building;
       const tier = visualTier(level);
@@ -203,6 +209,24 @@ export function renderTileInfoPanel(selected) {
     ${prodLines}
     ${upgradeSection}
   `;
+}
+
+// Met à jour uniquement l'état activé/désactivé des boutons existants, SANS reconstruire
+// le DOM — appelé à chaque tick pour rester réactif sans jamais interrompre un clic en cours
+export function updateTileInfoAffordability() {
+  const buttons = els.tileInfoPanel.querySelectorAll('[data-action]');
+  buttons.forEach((btn) => {
+    const q = Number(btn.dataset.q);
+    const r = Number(btn.dataset.r);
+    const action = btn.dataset.action;
+    if (action === 'unlock') {
+      btn.disabled = !canUnlockTile(q, r);
+    } else if (action === 'build') {
+      btn.disabled = !canPlaceBuilding(q, r, btn.dataset.type);
+    } else if (action === 'upgrade') {
+      btn.disabled = !canUpgradeBuilding(q, r);
+    }
+  });
 }
 
 // ============================================

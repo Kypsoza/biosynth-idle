@@ -221,7 +221,7 @@ button:focus-visible,
 .hex-tile--far .hex-tile-shape {
   fill: var(--color-bg);
   stroke: var(--color-border);
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: default;
 }
 
@@ -230,12 +230,18 @@ button:focus-visible,
 }
 
 .hex-tile--frontier .hex-tile-shape {
-  fill: var(--color-bg-panel-raised);
-  stroke: var(--color-cyan-dim);
-  stroke-dasharray: 4 3;
+  fill: var(--color-bg-panel);
+  stroke: var(--color-amber);
+  stroke-width: 2.5;
+  stroke-dasharray: 5 4;
 }
 
 .hex-tile--empty .hex-tile-shape {
+  fill: rgba(0, 217, 255, 0.1);
+  stroke: var(--color-cyan-dim);
+}
+
+.hex-tile--built .hex-tile-shape {
   fill: var(--color-bg-panel-raised);
   stroke: var(--color-border);
 }
@@ -243,6 +249,22 @@ button:focus-visible,
 .hex-tile--selected .hex-tile-shape {
   stroke: var(--color-text);
   stroke-width: 3;
+}
+
+.hex-tile-glyph {
+  pointer-events: none;
+  font-size: 18px;
+}
+
+.hex-tile-glyph--lock {
+  fill: var(--color-amber);
+  opacity: 0.85;
+}
+
+.hex-tile-glyph--build {
+  fill: var(--color-cyan);
+  opacity: 0.8;
+  font-weight: 700;
 }
 
 .hex-tile-icon {
@@ -300,15 +322,16 @@ button:focus-visible,
 }
 
 .resource-icon {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
+  font-size: 15px;
+  line-height: 1;
+  width: 18px;
+  text-align: center;
   flex-shrink: 0;
 }
 
-.resource-icon--cycles { background: var(--color-cyan); box-shadow: var(--glow-cyan); }
-.resource-icon--biomasse { background: var(--color-green); box-shadow: var(--glow-green); }
-.resource-icon--adn { background: var(--color-magenta); box-shadow: var(--glow-magenta); }
+.resource-icon--cycles { text-shadow: var(--glow-cyan); }
+.resource-icon--biomasse { text-shadow: var(--glow-green); }
+.resource-icon--adn { text-shadow: var(--glow-magenta); }
 
 .resource-name {
   flex: 1;
