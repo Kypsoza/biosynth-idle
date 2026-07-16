@@ -66,7 +66,66 @@ function tileVisualState(q, r) {
   return isTileUnlockable(q, r) ? 'frontier' : 'far';
 }
 
-function shadeColor(hex, percent) {
+function smallHexPoints(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 180) * (60 * i - 30);
+    pts.push(`${(cx + r * Math.cos(angle)).toFixed(1)},${(cy + r * Math.sin(angle)).toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+
+// Icônes thématisées par type de bâtiment (au lieu d'un simple cercle uniforme)
+function buildingIconMarkup(type, x, y, radius) {
+  const grad = `url(#grad-${type})`;
+  const color = BUILDING_TYPES[type].color;
+
+  if (type === 'synapse') {
+    // Nœud neuronal : cœur central + dendrites dorées rayonnantes
+    let dendrites = '';
+    for (const angle of [45, 135, 225, 315]) {
+      const rad = (angle * Math.PI) / 180;
+      const x2 = x + Math.cos(rad) * radius * 1.4;
+      const y2 = y + Math.sin(rad) * radius * 1.4;
+      dendrites += `<line x1="${x}" y1="${y}" x2="${x2}" y2="${y2}" stroke="url(#metalGold)" stroke-width="1.4"/><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="1.8" fill="#FFE9A8"/>`;
+    }
+    return `<g class="hex-building-core" style="color:${color}">${dendrites}<circle cx="${x}" cy="${y}" r="${radius * 0.62}" fill="${grad}"/></g>`;
+  }
+
+  if (type === 'incubateur') {
+    // Cellule/gousse hexagonale, en écho au thème de la grille
+    return `<polygon class="hex-building-core" style="color:${color}" points="${smallHexPoints(x, y, radius)}" fill="${grad}"/>`;
+  }
+
+  if (type === 'nexus') {
+    // Hub de fusion : losange central + nœuds connecteurs dorés
+    let nubs = '';
+    for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+      const nx = x + dx * radius * 1.3;
+      const ny = y + dy * radius * 1.3;
+      nubs += `<line x1="${x}" y1="${y}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="url(#metalGold)" stroke-width="1.3"/><circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="1.6" fill="#FFE9A8"/>`;
+    }
+    return `<g class="hex-building-core" style="color:${color}">${nubs}<rect x="${(x - radius * 0.6).toFixed(1)}" y="${(y - radius * 0.6).toFixed(1)}" width="${(radius * 1.2).toFixed(1)}" height="${(radius * 1.2).toFixed(1)}" fill="${grad}" transform="rotate(45 ${x} ${y})"/></g>`;
+  }
+
+  if (type === 'regulateur') {
+    // Valve de régulation : cercle + vannes latérales
+    return `<g class="hex-building-core" style="color:${color}">
+      <circle cx="${x}" cy="${y}" r="${radius * 0.8}" fill="${grad}"/>
+      <rect x="${(x - 2).toFixed(1)}" y="${(y - radius - 3).toFixed(1)}" width="4" height="6" fill="url(#metalGold)"/>
+      <rect x="${(x - 2).toFixed(1)}" y="${(y + radius - 3).toFixed(1)}" width="4" height="6" fill="url(#metalGold)"/>
+    </g>`;
+  }
+
+  if (type === 'energie') {
+    // Éclair stylisé
+    const p = (dx, dy) => `${(x + dx * radius).toFixed(1)},${(y + dy * radius).toFixed(1)}`;
+    return `<path class="hex-building-core" style="color:${color}" d="M ${p(0.25, -1)} L ${p(-0.45, 0.15)} L ${p(0, 0.15)} L ${p(-0.25, 1)} L ${p(0.45, -0.15)} L ${p(0, -0.15)} Z" fill="${grad}"/>`;
+  }
+
+  // Repli par défaut : cercle simple
+  return `<circle class="hex-building-core" style="color:${color}" cx="${x}" cy="${y}" r="${radius}" fill="${grad}"/>`;
+}
   const num = parseInt(hex.replace('#', ''), 16);
   let r = (num >> 16) + percent;
   let g = ((num >> 8) & 0x00ff) + percent;
@@ -174,10 +233,9 @@ export function renderGrid(selectedKey) {
       } else {
         const tier = visualTier(level);
         classes.push(`hex-tile--tier-${tier}`);
-        const color = BUILDING_TYPES[type].color;
         const radius = 8 + tier * 2.5;
         inner += `<circle class="hex-building-ring" cx="${x}" cy="${y}" r="${radius + 3}" fill="none" stroke="url(#metalGold)" stroke-width="1.6"></circle>`;
-        inner += `<circle class="hex-building-core" cx="${x}" cy="${y}" r="${radius}" fill="url(#grad-${type})" style="color:${color}"></circle>`;
+        inner += buildingIconMarkup(type, x, y, radius);
         const agentBadge = assignedAgents !== undefined ? ` · ${assignedAgents}👤` : '';
         inner += `<text class="hex-tile-level-badge" x="${x}" y="${y + radius + 12}" text-anchor="middle">Nv.${level}${agentBadge}</text>`;
       }

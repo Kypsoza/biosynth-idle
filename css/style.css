@@ -149,6 +149,7 @@ button:focus-visible,
   align-items: center;
   gap: 6px;
   font-size: 0.9rem;
+  cursor: help;
 }
 
 .hud-stat-label {
@@ -240,6 +241,7 @@ button:focus-visible,
   stroke-width: 2;
   transition: filter 0.15s ease, stroke 0.15s ease;
   cursor: pointer;
+  pointer-events: all;
 }
 
 .hex-tile-shape:hover {
@@ -262,6 +264,12 @@ button:focus-visible,
   stroke: var(--color-amber);
   stroke-width: 2.5;
   stroke-dasharray: 5 4;
+  animation: frontier-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes frontier-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 .hex-tile--empty .hex-tile-shape {
